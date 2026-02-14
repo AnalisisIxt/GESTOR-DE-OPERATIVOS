@@ -1,0 +1,7 @@
+{
+  "name": "Operativos Ixtapaluca",
+  "description": "Sistema de gestión y registro de operativos policiales con seguimiento de ubicación, unidades y estadísticas detalladas.",
+  "requestFramePermissions": [
+    "geolocation"
+  ]
+}
