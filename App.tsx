@@ -23,7 +23,7 @@ import Login from './pages/Login';
 import UserProfile from './pages/UserProfile';
 
 import { Operative, User, CatalogEntry } from './types';
-import { OPERATIVE_TYPES, COLONIA_CATALOG as DEFAULT_COLONIES } from './constants';
+import { OPERATIVE_TYPES, COLONIA_CATALOG as DEFAULT_COLONIES, CORPORATIONS as DEFAULT_CORPORATIONS } from './constants';
 import { removeAccents } from './utils';
 
 const App: React.FC = () => {
@@ -32,6 +32,7 @@ const App: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
   const [opTypes, setOpTypes] = useState<string[]>([]);
   const [coloniaCatalog, setColoniaCatalog] = useState<CatalogEntry[]>([]);
+  const [corporationsCatalog, setCorporationsCatalog] = useState<string[]>([]);
 
   useEffect(() => {
     const savedOps = localStorage.getItem('ixta_operatives');
@@ -44,6 +45,10 @@ const App: React.FC = () => {
     const savedColonies = localStorage.getItem('ixta_colonia_catalog');
     if (savedColonies) setColoniaCatalog(JSON.parse(savedColonies));
     else setColoniaCatalog(DEFAULT_COLONIES);
+
+    const savedCorps = localStorage.getItem('ixta_corporations_catalog');
+    if (savedCorps) setCorporationsCatalog(JSON.parse(savedCorps));
+    else setCorporationsCatalog(DEFAULT_CORPORATIONS);
 
     const savedUsers = localStorage.getItem('ixta_users');
     if (savedUsers) {
@@ -88,6 +93,10 @@ const App: React.FC = () => {
     if (coloniaCatalog.length > 0) localStorage.setItem('ixta_colonia_catalog', JSON.stringify(coloniaCatalog));
   }, [coloniaCatalog]);
 
+  useEffect(() => {
+    if (corporationsCatalog.length > 0) localStorage.setItem('ixta_corporations_catalog', JSON.stringify(corporationsCatalog));
+  }, [corporationsCatalog]);
+
   const handleLogout = () => {
     setUser(null);
     localStorage.removeItem('ixta_user');
@@ -115,88 +124,88 @@ const App: React.FC = () => {
     alert('CONTRASEÑA ACTUALIZADA CORRECTAMENTE');
   };
 
-  if (!user) {
-    return <Login users={users} onLogin={(u) => { setUser(u); localStorage.setItem('ixta_user', JSON.stringify(u)); }} />;
-  }
-
   // Permission Checks
-  const canViewDashboard = ['ADMIN', 'DIRECTOR', 'REGIONAL', 'SHIFT_LEADER', 'JEFE_AGRUPAMIENTO', 'ANALISTA'].includes(user.role);
-  const canViewStats = ['ADMIN', 'DIRECTOR', 'REGIONAL', 'JEFE_AGRUPAMIENTO', 'ANALISTA'].includes(user.role);
-  const canAddOp = !['DIRECTOR', 'ANALISTA'].includes(user.role);
-  const canManageUsers = user.role === 'ADMIN';
-  const canManageCatalog = ['ADMIN', 'ANALISTA'].includes(user.role);
-  const canUpdatePassword = ['ADMIN', 'DIRECTOR', 'REGIONAL', 'JEFE_AGRUPAMIENTO', 'ANALISTA'].includes(user.role);
+  const canViewDashboard = user && ['ADMIN', 'DIRECTOR', 'REGIONAL', 'JEFE_DE_TURNO', 'JEFE_AGRUPAMIENTO', 'ANALISTA'].includes(user.role);
+  const canViewStats = user && ['ADMIN', 'DIRECTOR', 'REGIONAL', 'JEFE_AGRUPAMIENTO', 'ANALISTA'].includes(user.role);
+  const canAddOp = user && !['DIRECTOR', 'ANALISTA'].includes(user.role);
+  const canManageUsers = user && user.role === 'ADMIN';
+  const canManageCatalog = user && ['ADMIN', 'ANALISTA'].includes(user.role);
+  const canUpdatePassword = user && ['ADMIN', 'DIRECTOR', 'REGIONAL', 'JEFE_DE_TURNO', 'JEFE_AGRUPAMIENTO', 'ANALISTA'].includes(user.role);
 
   return (
     <Router>
-      <div className="flex flex-col min-h-screen pb-24 md:pb-0 md:pl-20 bg-slate-950 text-slate-100 uppercase">
-        <header className="md:hidden flex items-center justify-between p-4 bg-slate-900 border-b border-slate-800 sticky top-0 z-40">
-          <div className="flex items-center gap-2">
-            <Shield className="w-8 h-8 text-blue-500" />
-            <h1 className="text-xl font-bold">OPERATIVOS</h1>
-          </div>
-          <div className="flex items-center gap-2">
-            <span className="text-[9px] font-black px-2 py-0.5 bg-blue-500/10 text-blue-500 border border-blue-500/20 rounded uppercase">
-              {user.role.replace('_', ' ')}
-            </span>
-          </div>
-        </header>
+      {!user ? (
+        <Login users={users} onLogin={(u) => { setUser(u); localStorage.setItem('ixta_user', JSON.stringify(u)); }} />
+      ) : (
+        <div className="flex flex-col min-h-screen pb-24 md:pb-0 md:pl-20 bg-slate-950 text-slate-100 uppercase">
+          <header className="md:hidden flex items-center justify-between p-4 bg-slate-900 border-b border-slate-800 sticky top-0 z-40">
+            <div className="flex items-center gap-2">
+              <Shield className="w-8 h-8 text-blue-500" />
+              <h1 className="text-xl font-bold">OPERATIVOS</h1>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-[9px] font-black px-2 py-0.5 bg-blue-500/10 text-blue-500 border border-blue-500/20 rounded uppercase">
+                {user.role.replace('_', ' ')}
+              </span>
+            </div>
+          </header>
 
-        <nav className="fixed bottom-0 left-0 right-0 md:top-0 md:bottom-0 md:w-20 bg-slate-900 border-t md:border-t-0 md:border-r border-slate-800 flex md:flex-col items-center z-50">
-          <div className="hidden md:flex items-center justify-center py-6 w-full">
-            <Shield className="w-10 h-10 text-blue-500" />
-          </div>
-          
-          <div className="flex md:flex-col overflow-x-auto md:overflow-x-visible no-scrollbar w-full md:h-full items-center px-2 py-2 md:py-0 gap-1 md:gap-4 scroll-smooth">
-            {canViewDashboard ? (
-              <NavLink to="/" icon={<LayoutDashboard />} label="PANEL" />
-            ) : (
-              <NavLink to="/operatives" icon={<ClipboardList />} label="HISTORIAL" />
-            )}
+          <nav className="fixed bottom-0 left-0 right-0 md:top-0 md:bottom-0 md:w-20 bg-slate-900 border-t md:border-t-0 md:border-r border-slate-800 flex md:flex-col items-center z-50">
+            <div className="hidden md:flex items-center justify-center py-6 w-full">
+              <Shield className="w-10 h-10 text-blue-500" />
+            </div>
+            
+            <div className="flex md:flex-col overflow-x-auto md:overflow-x-visible no-scrollbar w-full md:h-full items-center px-2 py-2 md:py-0 gap-1 md:gap-4 scroll-smooth">
+              {canViewDashboard ? (
+                <NavLink to="/" icon={<LayoutDashboard />} label="PANEL" />
+              ) : (
+                <NavLink to="/operatives" icon={<ClipboardList />} label="HISTORIAL" />
+              )}
 
-            {canViewStats && (
-              <NavLink to="/stats" icon={<BarChart3 />} label="ESTADISTICAS" />
-            )}
+              {canViewStats && (
+                <NavLink to="/stats" icon={<BarChart3 />} label="ESTADISTICAS" />
+              )}
 
-            {canAddOp && (
-              <NavLink to="/new" icon={<PlusCircle />} label="NUEVO" />
-            )}
+              {canAddOp && (
+                <NavLink to="/new" icon={<PlusCircle />} label="NUEVO" />
+              )}
 
-            {canViewDashboard && (
-              <NavLink to="/operatives" icon={<ClipboardList />} label="LISTA" />
-            )}
+              {canViewDashboard && (
+                <NavLink to="/operatives" icon={<ClipboardList />} label="LISTA" />
+              )}
 
-            {(canManageUsers || canManageCatalog) && (
-              <NavLink to="/admin" icon={<Settings />} label="ADMIN" />
-            )}
+              {(canManageUsers || canManageCatalog) && (
+                <NavLink to="/admin" icon={<Settings />} label="ADMIN" />
+              )}
 
-            {canUpdatePassword && (
-              <NavLink to="/profile" icon={<Key />} label="CONTRASEÑA" />
-            )}
+              {canUpdatePassword && (
+                <NavLink to="/profile" icon={<Key />} label="CONTRASEÑA" />
+              )}
 
-            <button 
-              onClick={handleLogout} 
-              className="flex flex-col items-center justify-center shrink-0 w-20 h-16 md:w-16 md:h-16 rounded-xl text-red-500 hover:bg-red-500/10 transition-all md:mt-auto md:mb-6"
-            >
-              <LogOut className="w-6 h-6" />
-              <span className="text-[9px] uppercase font-black tracking-tighter mt-1">SALIR</span>
-            </button>
-          </div>
-        </nav>
+              <button 
+                onClick={handleLogout} 
+                className="flex flex-col items-center justify-center shrink-0 w-20 h-16 md:w-16 md:h-16 rounded-xl text-red-500 hover:bg-red-500/10 transition-all md:mt-auto md:mb-6"
+              >
+                <LogOut className="w-6 h-6" />
+                <span className="text-[9px] uppercase font-black tracking-tighter mt-1">SALIR</span>
+              </button>
+            </div>
+          </nav>
 
-        <main className="flex-1 max-w-5xl mx-auto w-full p-4 md:p-8">
-          <Routes>
-            <Route path="/" element={canViewDashboard ? <Home operatives={operatives} user={user} /> : <Navigate to="/operatives" />} />
-            <Route path="/new" element={canAddOp ? <NewOperative operatives={operatives} addOperative={addOperative} opTypes={opTypes} user={user} coloniaCatalog={coloniaCatalog} /> : <Navigate to="/" />} />
-            <Route path="/operatives" element={<Home operatives={operatives} showAll={true} user={user} />} />
-            <Route path="/stats" element={canViewStats ? <Statistics operatives={operatives} opTypes={opTypes} /> : <Navigate to="/" />} />
-            <Route path="/admin" element={(canManageUsers || canManageCatalog) ? <Admin opTypes={opTypes} setOpTypes={setOpTypes} operatives={operatives} users={users} setUsers={setUsers} currentUserRole={user.role} coloniaCatalog={coloniaCatalog} setColoniaCatalog={setColoniaCatalog} /> : <Navigate to="/" />} />
-            <Route path="/operative/:id" element={<OperativeDetails operatives={operatives} updateOperative={updateOperative} role={user.role} userId={user.id} deleteOperative={deleteOperative} coloniaCatalog={coloniaCatalog} />} />
-            <Route path="/profile" element={canUpdatePassword ? <UserProfile user={user} updatePassword={updatePassword} /> : <Navigate to="/" />} />
-            <Route path="*" element={<Navigate to="/" />} />
-          </Routes>
-        </main>
-      </div>
+          <main className="flex-1 max-w-5xl mx-auto w-full p-4 md:p-8">
+            <Routes>
+              <Route path="/" element={canViewDashboard ? <Home operatives={operatives} user={user} /> : <Navigate to="/operatives" />} />
+              <Route path="/new" element={canAddOp ? <NewOperative operatives={operatives} addOperative={addOperative} opTypes={opTypes} user={user} coloniaCatalog={coloniaCatalog} corporationsCatalog={corporationsCatalog} /> : <Navigate to="/" />} />
+              <Route path="/operatives" element={<Home operatives={operatives} showAll={true} user={user} />} />
+              <Route path="/stats" element={canViewStats ? <Statistics operatives={operatives} opTypes={opTypes} /> : <Navigate to="/" />} />
+              <Route path="/admin" element={(canManageUsers || canManageCatalog) ? <Admin opTypes={opTypes} setOpTypes={setOpTypes} corporationsCatalog={corporationsCatalog} setCorporationsCatalog={setCorporationsCatalog} operatives={operatives} users={users} setUsers={setUsers} currentUserRole={user.role} coloniaCatalog={coloniaCatalog} setColoniaCatalog={setColoniaCatalog} /> : <Navigate to="/" />} />
+              <Route path="/operative/:id" element={<OperativeDetails operatives={operatives} updateOperative={updateOperative} role={user.role} userId={user.id} deleteOperative={deleteOperative} coloniaCatalog={coloniaCatalog} />} />
+              <Route path="/profile" element={canUpdatePassword ? <UserProfile user={user} updatePassword={updatePassword} /> : <Navigate to="/" />} />
+              <Route path="*" element={<Navigate to="/" />} />
+            </Routes>
+          </main>
+        </div>
+      )}
     </Router>
   );
 };
@@ -209,7 +218,6 @@ const NavLink: React.FC<{ to: string, icon: React.ReactNode, label: string }> = 
       to={to} 
       className={`flex flex-col items-center justify-center shrink-0 w-20 h-16 md:w-16 md:h-16 rounded-xl transition-all ${isActive ? 'bg-blue-600/20 text-blue-500' : 'text-slate-400 hover:bg-slate-800'}`}
     >
-      {/* Cast to any to bypass type error for Lucide icon cloning */}
       {React.cloneElement(icon as any, { className: "w-6 h-6" })}
       <span className="text-[9px] uppercase font-black tracking-tighter mt-1">{label}</span>
     </Link>

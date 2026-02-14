@@ -18,11 +18,13 @@ const Home: React.FC<HomeProps> = ({ operatives, showAll = false, user }) => {
     let list = operatives;
 
     // 1. Role-based visibility
-    if (['REGIONAL', 'SHIFT_LEADER', 'JEFE_AGRUPAMIENTO'].includes(user.role)) {
+    // Fixed: 'SHIFT_LEADER' is not a valid Role, changed to 'JEFE_DE_TURNO'
+    if (['REGIONAL', 'JEFE_DE_TURNO', 'JEFE_AGRUPAMIENTO'].includes(user.role)) {
       if (!user.isAgrupamiento && user.assignedRegion) {
         list = list.filter(op => op.region === user.assignedRegion);
       }
-    } else if (user.role === 'QUADRANT_LEADER' || user.role === 'PATROLMAN') {
+    // Fixed: 'QUADRANT_LEADER' and 'PATROLMAN' are not valid Roles, changed to 'JEFE_DE_CUADRANTE' and 'PATRULLERO'
+    } else if (user.role === 'JEFE_DE_CUADRANTE' || user.role === 'PATRULLERO') {
       list = list.filter(op => op.createdBy === user.id);
     }
 

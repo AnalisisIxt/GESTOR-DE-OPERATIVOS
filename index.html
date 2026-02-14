@@ -9,8 +9,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Google Maps API (Note: In a production environment, an API Key would be required) -->
-    <script src="https://maps.googleapis.com/maps/api/js?v=3.exp&sensor=false"></script>
+    <!-- Leaflet CSS for Map -->
+    <link rel="stylesheet" href="https://esm.sh/leaflet@1.9.4/dist/leaflet.css" />
     <style>
       body {
         font-family: 'Inter', sans-serif;
@@ -31,6 +31,10 @@
       ::-webkit-scrollbar-thumb:hover {
         background: #475569;
       }
+      /* Map container fix */
+      .leaflet-container {
+        background: #020617 !important;
+      }
     </style>
   <script type="importmap">
 {
@@ -41,7 +45,8 @@
     "lucide-react": "https://esm.sh/lucide-react@^0.563.0",
     "recharts": "https://esm.sh/recharts@^3.7.0",
     "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
-    "@google/genai": "https://esm.sh/@google/genai@^1.41.0"
+    "@google/genai": "https://esm.sh/@google/genai@^1.41.0",
+    "leaflet": "https://esm.sh/leaflet@1.9.4"
   }
 }
 </script>

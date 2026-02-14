@@ -1,5 +1,5 @@
 
-export type Role = 'ADMIN' | 'DIRECTOR' | 'REGIONAL' | 'SHIFT_LEADER' | 'QUADRANT_LEADER' | 'PATROLMAN' | 'JEFE_AGRUPAMIENTO' | 'ANALISTA';
+export type Role = 'ADMIN' | 'DIRECTOR' | 'REGIONAL' | 'JEFE_DE_TURNO' | 'JEFE_DE_CUADRANTE' | 'PATRULLERO' | 'JEFE_AGRUPAMIENTO' | 'ANALISTA';
 
 export interface User {
   id: string;
@@ -34,11 +34,13 @@ export interface Unit {
   personnelCount: number;
 }
 
-export interface Institution {
+export interface Corporation {
   id: string;
   name: string;
   personnelCount: number;
   unitCount: number;
+  unitNumber: string;
+  inCharge: string;
 }
 
 export interface ReunionVecinalDetails {
@@ -76,7 +78,7 @@ export interface Operative {
   shift: Shift;
   location: LocationData;
   units: Unit[];
-  institutions: Institution[];
+  corporations: Corporation[];
   conclusion?: ConclusionData;
   createdBy: string; // User ID
 }

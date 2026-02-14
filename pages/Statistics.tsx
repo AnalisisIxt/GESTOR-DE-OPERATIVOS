@@ -14,7 +14,7 @@ import {
   Legend,
   ResponsiveContainer as ResponsiveContainerChart
 } from 'recharts';
-import { Filter, Calendar, MapPin, Shield, TrendingUp, Target, AlertTriangle, ChevronRight, Share2, Info } from 'lucide-react';
+import { Filter, Calendar, MapPin, Shield, TrendingUp, Target, AlertTriangle, ChevronRight, Share2, Info, AlertCircle } from 'lucide-react';
 import { Operative, Shift } from '../types';
 import { REGIONS, COLONIA_CATALOG } from '../constants';
 import { removeAccents } from '../utils';
@@ -28,7 +28,6 @@ const COLORS = ['#3b82f6', '#60a5fa', '#2dd4bf', '#fbbf24', '#f87171', '#a78bfa'
 
 const Statistics: React.FC<StatisticsProps> = ({ operatives, opTypes }) => {
   const [filterRegion, setFilterRegion] = useState("TODOS");
-  const [filterShift, setFilterShift] = useState("TODOS");
   const [filterMonth, setFilterMonth] = useState("TODOS");
 
   const months = ["ENE", "FEB", "MAR", "ABR", "MAY", "JUN", "JUL", "AGO", "SEP", "OCT", "NOV", "DIC"];
@@ -36,27 +35,25 @@ const Statistics: React.FC<StatisticsProps> = ({ operatives, opTypes }) => {
   const filteredData = useMemo(() => {
     return operatives.filter(op => {
       const matchRegion = filterRegion === "TODOS" || op.region === filterRegion;
-      const matchShift = filterShift === "TODOS" || op.shift === filterShift;
       const opDate = new Date(op.startDate);
       const opMonth = isNaN(opDate.getTime()) ? -1 : opDate.getUTCMonth();
       const matchMonth = filterMonth === "TODOS" || (opMonth !== -1 && months[opMonth] === filterMonth);
-      return matchRegion && matchShift && matchMonth;
+      return matchRegion && matchMonth;
     });
-  }, [operatives, filterRegion, filterShift, filterMonth]);
+  }, [operatives, filterRegion, filterMonth]);
 
-  // Metric 1: Regions with at least one operative
   const activeRegionsCount = useMemo(() => {
     const activeSet = new Set(filteredData.map(op => op.region));
+    const inactive = REGIONS.filter(r => !activeSet.has(r));
     return {
       active: activeSet.size,
-      total: REGIONS.length
+      total: REGIONS.length,
+      inactive
     };
   }, [filteredData]);
 
-  // Metric 2: Operatives by Region
   const opsByRegion = useMemo(() => {
     const counts: Record<string, number> = {};
-    // Only show the main 7 regions for cleaner bar chart, or top 6 as the image
     const mainRegions = REGIONS.filter(r => r.startsWith('REGION'));
     mainRegions.forEach(r => counts[r] = 0);
     
@@ -72,7 +69,6 @@ const Statistics: React.FC<StatisticsProps> = ({ operatives, opTypes }) => {
     }));
   }, [filteredData]);
 
-  // Metric 3: Types Distribution
   const opsByType = useMemo(() => {
     const counts: Record<string, number> = {};
     filteredData.forEach(op => {
@@ -85,7 +81,6 @@ const Statistics: React.FC<StatisticsProps> = ({ operatives, opTypes }) => {
       .map(([name, value]) => ({ name, value }));
   }, [filteredData]);
 
-  // Metric 4: Critical Colonies (Top 3)
   const criticalColonies = useMemo(() => {
     const counts: Record<string, number> = {};
     filteredData.forEach(op => {
@@ -98,7 +93,6 @@ const Statistics: React.FC<StatisticsProps> = ({ operatives, opTypes }) => {
       .map(([name, value]) => ({ name, value }));
   }, [filteredData]);
 
-  // Metric 5: Coverage Gap
   const missingColoniesCount = useMemo(() => {
     const coveredSet = new Set(filteredData.map(op => removeAccents(op.location.colony)));
     const totalSet = new Set(COLONIA_CATALOG.map(c => removeAccents(c.colony)));
@@ -109,7 +103,6 @@ const Statistics: React.FC<StatisticsProps> = ({ operatives, opTypes }) => {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-700 uppercase max-w-lg mx-auto md:max-w-5xl">
-      {/* Navbar Minimalista */}
       <header className="flex items-center justify-between px-2">
         <div>
           <h2 className="text-2xl font-black text-white tracking-tight uppercase">ESTADISTICAS</h2>
@@ -120,7 +113,6 @@ const Statistics: React.FC<StatisticsProps> = ({ operatives, opTypes }) => {
         </button>
       </header>
 
-      {/* Selector de Filtros Estilo Referencia */}
       <div className="flex gap-2 overflow-x-auto no-scrollbar py-2">
         <button className="flex items-center gap-2 bg-blue-600 px-4 py-2.5 rounded-xl text-xs font-black text-white shrink-0">
           <Filter className="w-3 h-3" /> FILTROS
@@ -143,7 +135,6 @@ const Statistics: React.FC<StatisticsProps> = ({ operatives, opTypes }) => {
         </select>
       </div>
 
-      {/* Tarjetas Principales */}
       <div className="grid grid-cols-2 gap-4">
         <div className="bg-slate-900/50 border border-slate-800 p-5 rounded-[2.5rem] relative overflow-hidden shadow-2xl">
           <span className="text-[10px] font-black text-slate-500 tracking-widest block mb-2 uppercase">TOTAL OPERATIVOS</span>
@@ -151,7 +142,7 @@ const Statistics: React.FC<StatisticsProps> = ({ operatives, opTypes }) => {
             <span className="text-3xl font-black text-white">{totalOps.toLocaleString()}</span>
             <span className="bg-emerald-500/10 text-emerald-500 text-[10px] font-black px-1.5 py-0.5 rounded-md border border-emerald-500/20 uppercase">+12%</span>
           </div>
-          <p className="text-[9px] text-slate-600 mt-2 font-bold uppercase">COMPARADO CON EL MES ANTERIOR</p>
+          <p className="text-[9px] text-slate-600 mt-2 font-bold uppercase">EN PERIODO FILTRADO</p>
         </div>
 
         <div className="bg-slate-900/50 border border-slate-800 p-5 rounded-[2.5rem] relative overflow-hidden shadow-2xl">
@@ -165,7 +156,6 @@ const Statistics: React.FC<StatisticsProps> = ({ operatives, opTypes }) => {
         </div>
       </div>
 
-      {/* Operativos por Región - Gráfica de Barras */}
       <section className="bg-slate-900/50 border border-slate-800 rounded-[2.5rem] p-6 shadow-2xl">
         <div className="flex items-center justify-between mb-8">
           <div>
@@ -196,9 +186,22 @@ const Statistics: React.FC<StatisticsProps> = ({ operatives, opTypes }) => {
             </BarChart>
           </ResponsiveContainer>
         </div>
+        
+        {activeRegionsCount.inactive.length > 0 && (
+          <div className="mt-6 pt-6 border-t border-slate-800">
+            <div className="flex items-center gap-2 mb-3">
+              <AlertCircle className="w-4 h-4 text-red-500" />
+              <p className="text-[10px] font-black text-red-500 uppercase tracking-widest">REGIONES SIN ACTIVIDAD EN EL PERIODO</p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {activeRegionsCount.inactive.map(r => (
+                <span key={r} className="text-[8px] font-black px-2 py-1 bg-slate-950 text-slate-500 border border-slate-800 rounded uppercase">{r}</span>
+              ))}
+            </div>
+          </div>
+        )}
       </section>
 
-      {/* Tipos de Operativo - Donut Chart */}
       <section className="bg-slate-900/50 border border-slate-800 rounded-[2.5rem] p-8 shadow-2xl">
         <h3 className="text-lg font-black text-white uppercase">TIPOS DE OPERATIVO</h3>
         <p className="text-slate-500 text-[10px] font-bold uppercase mb-8">PROPORCION POR PROTOCOLO APLICADO</p>
@@ -241,7 +244,6 @@ const Statistics: React.FC<StatisticsProps> = ({ operatives, opTypes }) => {
         </div>
       </section>
 
-      {/* Colonias Críticas y Mapa Densidad */}
       <section className="bg-slate-900/50 border border-slate-800 rounded-[2.5rem] p-6 shadow-2xl space-y-6">
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-black text-white uppercase">COLONIAS CRITICAS</h3>
@@ -277,7 +279,6 @@ const Statistics: React.FC<StatisticsProps> = ({ operatives, opTypes }) => {
           )}
         </div>
 
-        {/* Info adicional de omisión */}
         <div className="bg-blue-600/10 border border-blue-500/20 p-4 rounded-2xl flex items-center gap-4 mt-4">
           <div className="p-3 bg-blue-600 rounded-xl">
             <Target className="w-5 h-5 text-white" />
@@ -289,20 +290,27 @@ const Statistics: React.FC<StatisticsProps> = ({ operatives, opTypes }) => {
         </div>
       </section>
 
-      {/* Mapa de Densidad Placeholder */}
       <section className="bg-slate-900/50 border border-slate-800 rounded-[2.5rem] p-6 shadow-2xl">
         <h3 className="text-lg font-black text-white uppercase mb-4">MAPA DE DENSIDAD</h3>
         <div className="relative h-48 bg-slate-950 rounded-3xl border border-slate-800 overflow-hidden group">
-          <div className="absolute inset-0 bg-[url('https://maps.googleapis.com/maps/api/staticmap?center=19.3142,-98.8821&zoom=13&size=600x400&maptype=roadmap&style=feature:all|element:all|saturation:-100|lightness:-20&style=feature:road|element:geometry|color:0x242f3e&style=feature:water|element:geometry|color:0x17263c')] bg-cover bg-center opacity-40 grayscale group-hover:scale-110 transition-transform duration-1000" />
+          {/* Replaced broken static map with stylized grid pattern */}
+          <div className="absolute inset-0 bg-slate-950">
+            <div className="absolute inset-0 opacity-20" style={{ 
+              backgroundImage: 'radial-gradient(circle at 2px 2px, #3b82f6 1px, transparent 0)',
+              backgroundSize: '24px 24px'
+            }}></div>
+            <div className="absolute inset-0 flex items-center justify-center opacity-10">
+              <MapPin className="w-32 h-32 text-blue-500" />
+            </div>
+          </div>
           <div className="absolute inset-0 flex items-center justify-center">
             <button className="flex items-center gap-2 bg-blue-600 px-6 py-3 rounded-2xl text-xs font-black text-white shadow-2xl shadow-blue-900/50 hover:bg-blue-500 transition-all uppercase">
-              <MapPin className="w-4 h-4" /> EXPLORAR MAPA INTERACTIVO
+              <TrendingUp className="w-4 h-4" /> VER HEATMAP DE INCIDENCIA
             </button>
           </div>
         </div>
       </section>
 
-      {/* Footer info minimalista */}
       <div className="flex items-center justify-center gap-2 text-slate-700 pb-10">
         <Info className="w-3 h-3" />
         <span className="text-[9px] font-black uppercase tracking-widest">ULTIMA ACTUALIZACION: {new Date().toLocaleTimeString()}</span>

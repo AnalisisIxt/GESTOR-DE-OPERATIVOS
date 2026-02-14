@@ -24,14 +24,13 @@ export const REGIONS = [
   "ASTROS", "PREVENCION DEL DELITO", "CUARTEL", "MONTADA", "K-9"
 ];
 
-// Corrected mixed-case strings to match Rank type in types.ts
 export const RANKS: Rank[] = [
   'Comisario', 'Subdirector', 'Tecnico Operativo', 'Encargado Regonal', 'Jefe de turno', 'Jefe de Cuadrante', 'Patrullero'
 ];
 
-export const INSTITUTIONS = [
+export const CORPORATIONS = [
   "SEDENA", "MARINA", "GUARDIA NACIONAL", "POLICIA ESTATAL", "MUNICIPAL",
-  "FISCALIA GENERAL DE JUSTICIA", "FISCALIA ESPECIALIZADA", "GRUPO ESPECIAL"
+  "FISCALIA GENERAL DE JUSTICIA", "FISCALIA ESPECIALIZADA", "GRUPO ESPECIAL", "OTRO"
 ];
 
 export const REGION_QUADRANTS: Record<string, string[]> = {
