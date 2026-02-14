@@ -11,7 +11,9 @@ import {
   Shield,
   LayoutDashboard,
   Users as UsersIcon,
-  Key
+  Key,
+  CloudCheck,
+  RefreshCw
 } from 'lucide-react';
 
 import Home from './pages/Home';
@@ -24,7 +26,7 @@ import UserProfile from './pages/UserProfile';
 
 import { Operative, User, CatalogEntry } from './types';
 import { OPERATIVE_TYPES, COLONIA_CATALOG as DEFAULT_COLONIES, CORPORATIONS as DEFAULT_CORPORATIONS } from './constants';
-import { removeAccents } from './utils';
+import { api } from './lib/api';
 
 const App: React.FC = () => {
   const [operatives, setOperatives] = useState<Operative[]>([]);
@@ -33,104 +35,98 @@ const App: React.FC = () => {
   const [opTypes, setOpTypes] = useState<string[]>([]);
   const [coloniaCatalog, setColoniaCatalog] = useState<CatalogEntry[]>([]);
   const [corporationsCatalog, setCorporationsCatalog] = useState<string[]>([]);
+  
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
+  // Carga inicial desde el "Backend"
   useEffect(() => {
-    const savedOps = localStorage.getItem('ixta_operatives');
-    if (savedOps) setOperatives(JSON.parse(savedOps));
-    
-    const savedTypes = localStorage.getItem('ixta_full_op_types');
-    if (savedTypes) setOpTypes(JSON.parse(savedTypes));
-    else setOpTypes(OPERATIVE_TYPES);
+    const initData = async () => {
+      setIsLoading(true);
+      try {
+        const [ops, u, types, colonies, corps] = await Promise.all([
+          api.getOperatives(),
+          api.getUsers(),
+          api.getCatalog('ixta_full_op_types', OPERATIVE_TYPES),
+          api.getCatalog('ixta_colonia_catalog', DEFAULT_COLONIES),
+          api.getCatalog('ixta_corporations_catalog', DEFAULT_CORPORATIONS)
+        ]);
 
-    const savedColonies = localStorage.getItem('ixta_colonia_catalog');
-    if (savedColonies) setColoniaCatalog(JSON.parse(savedColonies));
-    else setColoniaCatalog(DEFAULT_COLONIES);
+        setOperatives(ops);
+        setOpTypes(types);
+        setColoniaCatalog(colonies);
+        setCorporationsCatalog(corps);
 
-    const savedCorps = localStorage.getItem('ixta_corporations_catalog');
-    if (savedCorps) setCorporationsCatalog(JSON.parse(savedCorps));
-    else setCorporationsCatalog(DEFAULT_CORPORATIONS);
+        if (u.length === 0) {
+          const initialUsers: User[] = [
+            { id: '1', fullName: 'ADMINISTRADOR PRINCIPAL', username: 'admin', password: 'adm123', role: 'ADMIN' },
+            { id: 'u1', fullName: 'DIRECTOR ALPHA', username: 'alpha', password: '123', role: 'DIRECTOR' }
+          ];
+          setUsers(initialUsers);
+          await api.saveUsers(initialUsers);
+        } else {
+          setUsers(u);
+        }
 
-    const savedUsers = localStorage.getItem('ixta_users');
-    if (savedUsers) {
-      setUsers(JSON.parse(savedUsers));
-    } else {
-      const initialUsers: User[] = [
-        { id: '1', fullName: 'ADMINISTRADOR PRINCIPAL', username: 'admin', password: 'adm123', role: 'ADMIN' },
-        { id: 'u1', fullName: 'DIRECTOR ALPHA', username: 'alpha', password: '123', role: 'DIRECTOR' },
-        { id: 'u2', fullName: 'DIRECTOR ISIS', username: 'isis', password: '123', role: 'DIRECTOR' },
-        { id: 'u3', fullName: 'DIRECTOR DELTA', username: 'delta', password: '123', role: 'DIRECTOR' },
-        { id: 'u4', fullName: 'REGIONAL POSEIDON', username: 'poseidon', password: '123', role: 'REGIONAL', assignedRegion: 'REGION 1' },
-        { id: 'u5', fullName: 'REGIONAL AGUILA', username: 'aguila', password: '123', role: 'REGIONAL', assignedRegion: 'REGION 2' },
-        { id: 'u6', fullName: 'REGIONAL EFESTO', username: 'efesto', password: '123', role: 'REGIONAL', assignedRegion: 'REGION 3' },
-        { id: 'u7', fullName: 'REGIONAL HERMES', username: 'hermes', password: '123', role: 'REGIONAL', assignedRegion: 'REGION 4' },
-        { id: 'u8', fullName: 'REGIONAL LIBRA', username: 'libra', password: '123', role: 'REGIONAL', assignedRegion: 'REGION 5' },
-        { id: 'u9', fullName: 'REGIONAL LINCE', username: 'lince', password: '123', role: 'REGIONAL', assignedRegion: 'REGION 6' },
-        { id: 'u10', fullName: 'REGIONAL CRATOS', username: 'cratos', password: '123', role: 'REGIONAL', assignedRegion: 'REGION 7' },
-        { id: 'u11', fullName: 'JEFE ANUBIS', username: 'anubis', password: '123', role: 'JEFE_AGRUPAMIENTO', isAgrupamiento: true },
-        { id: 'u12', fullName: 'JEFE CONDOR', username: 'condor', password: '123', role: 'JEFE_AGRUPAMIENTO', isAgrupamiento: true },
-      ];
-      setUsers(initialUsers);
-      localStorage.setItem('ixta_users', JSON.stringify(initialUsers));
-    }
+        const savedUser = localStorage.getItem('ixta_user');
+        if (savedUser) setUser(JSON.parse(savedUser));
+      } catch (err) {
+        console.error("Error cargando base de datos:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-    const savedUser = localStorage.getItem('ixta_user');
-    if (savedUser) setUser(JSON.parse(savedUser));
+    initData();
   }, []);
-
-  useEffect(() => {
-    localStorage.setItem('ixta_operatives', JSON.stringify(operatives));
-  }, [operatives]);
-
-  useEffect(() => {
-    localStorage.setItem('ixta_users', JSON.stringify(users));
-  }, [users]);
-
-  useEffect(() => {
-    if (opTypes.length > 0) localStorage.setItem('ixta_full_op_types', JSON.stringify(opTypes));
-  }, [opTypes]);
-
-  useEffect(() => {
-    if (coloniaCatalog.length > 0) localStorage.setItem('ixta_colonia_catalog', JSON.stringify(coloniaCatalog));
-  }, [coloniaCatalog]);
-
-  useEffect(() => {
-    if (corporationsCatalog.length > 0) localStorage.setItem('ixta_corporations_catalog', JSON.stringify(corporationsCatalog));
-  }, [corporationsCatalog]);
 
   const handleLogout = () => {
     setUser(null);
     localStorage.removeItem('ixta_user');
   };
 
-  const addOperative = (op: Operative) => {
+  const addOperative = async (op: Operative) => {
+    setIsSyncing(true);
+    await api.saveOperative(op);
     setOperatives(prev => [op, ...prev]);
+    setIsSyncing(false);
   };
 
-  const updateOperative = (id: string, updates: Partial<Operative>) => {
+  const updateOperative = async (id: string, updates: Partial<Operative>) => {
+    setIsSyncing(true);
+    await api.updateOperative(id, updates);
     setOperatives(prev => prev.map(op => op.id === id ? { ...op, ...updates } : op));
+    setIsSyncing(false);
   };
 
-  const deleteOperative = (id: string) => {
+  const deleteOperative = async (id: string) => {
+    setIsSyncing(true);
+    await api.deleteOperative(id);
     setOperatives(prev => prev.filter(op => op.id !== id));
+    setIsSyncing(false);
   };
 
-  const updatePassword = (newPassword: string) => {
+  const updatePassword = async (newPassword: string) => {
     if (!user) return;
+    setIsSyncing(true);
     const updatedUsers = users.map(u => u.id === user.id ? { ...u, password: newPassword } : u);
     setUsers(updatedUsers);
+    await api.saveUsers(updatedUsers);
     const updatedSelf = { ...user, password: newPassword };
     setUser(updatedSelf);
     localStorage.setItem('ixta_user', JSON.stringify(updatedSelf));
+    setIsSyncing(false);
     alert('CONTRASEÑA ACTUALIZADA CORRECTAMENTE');
   };
 
-  // Permission Checks
-  const canViewDashboard = user && ['ADMIN', 'DIRECTOR', 'REGIONAL', 'JEFE_DE_TURNO', 'JEFE_AGRUPAMIENTO', 'ANALISTA'].includes(user.role);
-  const canViewStats = user && ['ADMIN', 'DIRECTOR', 'REGIONAL', 'JEFE_AGRUPAMIENTO', 'ANALISTA'].includes(user.role);
-  const canAddOp = user && !['DIRECTOR', 'ANALISTA'].includes(user.role);
-  const canManageUsers = user && user.role === 'ADMIN';
-  const canManageCatalog = user && ['ADMIN', 'ANALISTA'].includes(user.role);
-  const canUpdatePassword = user && ['ADMIN', 'DIRECTOR', 'REGIONAL', 'JEFE_DE_TURNO', 'JEFE_AGRUPAMIENTO', 'ANALISTA'].includes(user.role);
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center space-y-4">
+        <RefreshCw className="w-12 h-12 text-blue-500 animate-spin" />
+        <p className="text-slate-500 font-black text-xs tracking-widest uppercase">CONECTANDO AL BACKEND...</p>
+      </div>
+    );
+  }
 
   return (
     <Router>
@@ -138,54 +134,41 @@ const App: React.FC = () => {
         <Login users={users} onLogin={(u) => { setUser(u); localStorage.setItem('ixta_user', JSON.stringify(u)); }} />
       ) : (
         <div className="flex flex-col min-h-screen pb-24 md:pb-0 md:pl-20 bg-slate-950 text-slate-100 uppercase">
-          <header className="md:hidden flex items-center justify-between p-4 bg-slate-900 border-b border-slate-800 sticky top-0 z-40">
+          <header className="flex items-center justify-between p-4 bg-slate-900 border-b border-slate-800 sticky top-0 z-40">
             <div className="flex items-center gap-2">
               <Shield className="w-8 h-8 text-blue-500" />
-              <h1 className="text-xl font-bold">OPERATIVOS</h1>
+              <div className="hidden md:block">
+                 <h1 className="text-xl font-bold">OPERATIVOS IXTAPALUCA</h1>
+                 <p className="text-[10px] text-slate-500 font-bold uppercase">{user.role}</p>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              <span className="text-[9px] font-black px-2 py-0.5 bg-blue-500/10 text-blue-500 border border-blue-500/20 rounded uppercase">
-                {user.role.replace('_', ' ')}
-              </span>
+            
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-950 rounded-full border border-slate-800">
+                {isSyncing ? (
+                  <>
+                    <RefreshCw className="w-3 h-3 text-blue-500 animate-spin" />
+                    <span className="text-[8px] font-black text-blue-500 uppercase tracking-tighter">SINCRONIZANDO</span>
+                  </>
+                ) : (
+                  <>
+                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+                    <span className="text-[8px] font-black text-emerald-500 uppercase tracking-tighter">GUARDADO</span>
+                  </>
+                )}
+              </div>
             </div>
           </header>
 
           <nav className="fixed bottom-0 left-0 right-0 md:top-0 md:bottom-0 md:w-20 bg-slate-900 border-t md:border-t-0 md:border-r border-slate-800 flex md:flex-col items-center z-50">
-            <div className="hidden md:flex items-center justify-center py-6 w-full">
-              <Shield className="w-10 h-10 text-blue-500" />
-            </div>
-            
-            <div className="flex md:flex-col overflow-x-auto md:overflow-x-visible no-scrollbar w-full md:h-full items-center px-2 py-2 md:py-0 gap-1 md:gap-4 scroll-smooth">
-              {canViewDashboard ? (
-                <NavLink to="/" icon={<LayoutDashboard />} label="PANEL" />
-              ) : (
-                <NavLink to="/operatives" icon={<ClipboardList />} label="HISTORIAL" />
-              )}
-
-              {canViewStats && (
-                <NavLink to="/stats" icon={<BarChart3 />} label="ESTADISTICAS" />
-              )}
-
-              {canAddOp && (
-                <NavLink to="/new" icon={<PlusCircle />} label="NUEVO" />
-              )}
-
-              {canViewDashboard && (
-                <NavLink to="/operatives" icon={<ClipboardList />} label="LISTA" />
-              )}
-
-              {(canManageUsers || canManageCatalog) && (
-                <NavLink to="/admin" icon={<Settings />} label="ADMIN" />
-              )}
-
-              {canUpdatePassword && (
-                <NavLink to="/profile" icon={<Key />} label="CONTRASEÑA" />
-              )}
-
-              <button 
-                onClick={handleLogout} 
-                className="flex flex-col items-center justify-center shrink-0 w-20 h-16 md:w-16 md:h-16 rounded-xl text-red-500 hover:bg-red-500/10 transition-all md:mt-auto md:mb-6"
-              >
+            <div className="flex md:flex-col overflow-x-auto md:overflow-x-visible no-scrollbar w-full md:h-full items-center px-2 py-2 md:py-0 gap-1 md:gap-4">
+              <NavLink to="/" icon={<LayoutDashboard />} label="PANEL" />
+              <NavLink to="/stats" icon={<BarChart3 />} label="STATS" />
+              <NavLink to="/new" icon={<PlusCircle />} label="NUEVO" />
+              <NavLink to="/operatives" icon={<ClipboardList />} label="HISTORIAL" />
+              {user.role === 'ADMIN' && <NavLink to="/admin" icon={<Settings />} label="ADMIN" />}
+              <NavLink to="/profile" icon={<Key />} label="PASS" />
+              <button onClick={handleLogout} className="flex flex-col items-center justify-center shrink-0 w-20 h-16 md:w-16 md:h-16 rounded-xl text-red-500 hover:bg-red-500/10 transition-all md:mt-auto">
                 <LogOut className="w-6 h-6" />
                 <span className="text-[9px] uppercase font-black tracking-tighter mt-1">SALIR</span>
               </button>
@@ -194,13 +177,13 @@ const App: React.FC = () => {
 
           <main className="flex-1 max-w-5xl mx-auto w-full p-4 md:p-8">
             <Routes>
-              <Route path="/" element={canViewDashboard ? <Home operatives={operatives} user={user} /> : <Navigate to="/operatives" />} />
-              <Route path="/new" element={canAddOp ? <NewOperative operatives={operatives} addOperative={addOperative} opTypes={opTypes} user={user} coloniaCatalog={coloniaCatalog} corporationsCatalog={corporationsCatalog} /> : <Navigate to="/" />} />
+              <Route path="/" element={<Home operatives={operatives} user={user} />} />
+              <Route path="/new" element={<NewOperative operatives={operatives} addOperative={addOperative} opTypes={opTypes} user={user} coloniaCatalog={coloniaCatalog} corporationsCatalog={corporationsCatalog} />} />
               <Route path="/operatives" element={<Home operatives={operatives} showAll={true} user={user} />} />
-              <Route path="/stats" element={canViewStats ? <Statistics operatives={operatives} opTypes={opTypes} /> : <Navigate to="/" />} />
-              <Route path="/admin" element={(canManageUsers || canManageCatalog) ? <Admin opTypes={opTypes} setOpTypes={setOpTypes} corporationsCatalog={corporationsCatalog} setCorporationsCatalog={setCorporationsCatalog} operatives={operatives} users={users} setUsers={setUsers} currentUserRole={user.role} coloniaCatalog={coloniaCatalog} setColoniaCatalog={setColoniaCatalog} /> : <Navigate to="/" />} />
+              <Route path="/stats" element={<Statistics operatives={operatives} opTypes={opTypes} />} />
+              <Route path="/admin" element={<Admin opTypes={opTypes} setOpTypes={setOpTypes} corporationsCatalog={corporationsCatalog} setCorporationsCatalog={setCorporationsCatalog} operatives={operatives} users={users} setUsers={setUsers} currentUserRole={user.role} coloniaCatalog={coloniaCatalog} setColoniaCatalog={setColoniaCatalog} />} />
               <Route path="/operative/:id" element={<OperativeDetails operatives={operatives} updateOperative={updateOperative} role={user.role} userId={user.id} deleteOperative={deleteOperative} coloniaCatalog={coloniaCatalog} />} />
-              <Route path="/profile" element={canUpdatePassword ? <UserProfile user={user} updatePassword={updatePassword} /> : <Navigate to="/" />} />
+              <Route path="/profile" element={<UserProfile user={user} updatePassword={updatePassword} />} />
               <Route path="*" element={<Navigate to="/" />} />
             </Routes>
           </main>
@@ -214,10 +197,7 @@ const NavLink: React.FC<{ to: string, icon: React.ReactNode, label: string }> = 
   const location = useLocation();
   const isActive = location.pathname === to;
   return (
-    <Link 
-      to={to} 
-      className={`flex flex-col items-center justify-center shrink-0 w-20 h-16 md:w-16 md:h-16 rounded-xl transition-all ${isActive ? 'bg-blue-600/20 text-blue-500' : 'text-slate-400 hover:bg-slate-800'}`}
-    >
+    <Link to={to} className={`flex flex-col items-center justify-center shrink-0 w-20 h-16 md:w-16 md:h-16 rounded-xl transition-all ${isActive ? 'bg-blue-600/20 text-blue-500 shadow-inner' : 'text-slate-400 hover:bg-slate-800'}`}>
       {React.cloneElement(icon as any, { className: "w-6 h-6" })}
       <span className="text-[9px] uppercase font-black tracking-tighter mt-1">{label}</span>
     </Link>
