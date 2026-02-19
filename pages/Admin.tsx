@@ -1,27 +1,29 @@
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { 
   Plus, 
   Trash2, 
   ChevronUp, 
   ChevronDown, 
-  Download, 
   Database, 
   ShieldAlert, 
   Users as UsersIcon, 
-  UserPlus,
-  ArrowRight,
   Edit2,
   Save,
   X,
   MapPin,
-  CheckCircle2,
   Building2,
-  Calendar,
-  Filter
+  AlertTriangle,
+  Gavel,
+  SortAsc,
+  Filter,
+  Download,
+  Upload,
+  UserCheck,
+  MessageSquare
 } from 'lucide-react';
 import { Operative, User, Role, CatalogEntry } from '../types';
-import { REGIONS, REGION_QUADRANTS } from '../constants';
+import { REGIONS } from '../constants';
 import { removeAccents } from '../utils';
 
 interface AdminProps {
@@ -29,6 +31,14 @@ interface AdminProps {
   setOpTypes: (val: string[]) => void;
   corporationsCatalog: string[];
   setCorporationsCatalog: (val: string[]) => void;
+  crimesCatalog: string[];
+  setCrimesCatalog: (val: string[]) => void;
+  faultsCatalog: string[];
+  setFaultsCatalog: (val: string[]) => void;
+  ranksCatalog: string[];
+  setRanksCatalog: (val: string[]) => void;
+  meetingTopicsCatalog: string[];
+  setMeetingTopicsCatalog: (val: string[]) => void;
   operatives: Operative[];
   users: User[];
   setUsers: (updater: (prev: User[]) => User[]) => void;
@@ -42,555 +52,423 @@ const ROLES: Role[] = ['ADMIN', 'DIRECTOR', 'REGIONAL', 'JEFE_DE_TURNO', 'JEFE_D
 const Admin: React.FC<AdminProps> = ({ 
   opTypes, setOpTypes, 
   corporationsCatalog, setCorporationsCatalog,
+  crimesCatalog, setCrimesCatalog,
+  faultsCatalog, setFaultsCatalog,
+  ranksCatalog, setRanksCatalog,
+  meetingTopicsCatalog, setMeetingTopicsCatalog,
   operatives, users, setUsers, 
   currentUserRole, coloniaCatalog, setColoniaCatalog 
 }) => {
-  const [activeTab, setActiveTab] = useState<'catalog' | 'users' | 'export' | 'colonies' | 'corporations'>('users');
+  const [activeTab, setActiveTab] = useState<'catalog' | 'users' | 'colonies' | 'corporations' | 'crimes' | 'faults' | 'ranks' | 'meetingTopics'>('users');
   const [newType, setNewType] = useState("");
   const [newCorp, setNewCorp] = useState("");
-  const [dateRange, setDateRange] = useState({ start: '', end: '' });
+  const [newCrime, setNewCrime] = useState("");
+  const [newFault, setNewFault] = useState("");
+  const [newRank, setNewRank] = useState("");
+  const [newMeetingTopic, setNewMeetingTopic] = useState("");
 
-  // Colony Form State
   const [newColony, setNewColony] = useState<CatalogEntry>({ region: REGIONS[0], quadrant: '', colony: '' });
   const [colonyFilterRegion, setColonyFilterRegion] = useState("TODOS");
 
-  // User Form State
-  const [newUser, setNewUser] = useState<Partial<User>>({
-    fullName: '',
-    username: '',
-    password: '',
-    role: 'PATRULLERO',
-    assignedRegion: REGIONS[0],
-    isAgrupamiento: false
-  });
+  const [newUser, setNewUser] = useState<Partial<User>>({ fullName: '', username: '', password: '', role: 'PATRULLERO', assignedRegion: REGIONS[0], isAgrupamiento: false, phoneNumber: '', payrollNumber: '' });
   const [editingUser, setEditingUser] = useState<User | null>(null);
 
-  useEffect(() => {
-    if (currentUserRole === 'ANALISTA') {
-      setActiveTab('catalog');
-    }
-  }, [currentUserRole]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const filteredColonies = useMemo(() => {
+    let list = [...coloniaCatalog];
+    if (colonyFilterRegion !== "TODOS") list = list.filter(c => c.region === colonyFilterRegion);
+    return list.sort((a, b) => a.colony.localeCompare(b.colony));
+  }, [coloniaCatalog, colonyFilterRegion]);
 
   const addUser = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newUser.fullName || !newUser.username || !newUser.password) return;
-
-    const userToAdd: User = {
-      id: Math.random().toString(36).substring(2, 11),
-      fullName: removeAccents(newUser.fullName!),
+    const userToAdd: User = { 
+      id: Math.random().toString(36).substring(2, 11), 
+      fullName: removeAccents(newUser.fullName!), 
       username: newUser.username!, 
       password: newUser.password!, 
-      role: newUser.role!,
-      assignedRegion: ['ADMIN', 'DIRECTOR', 'ANALISTA'].includes(newUser.role!) ? undefined : newUser.assignedRegion,
-      isAgrupamiento: newUser.isAgrupamiento
+      role: newUser.role!, 
+      assignedRegion: newUser.assignedRegion, 
+      isAgrupamiento: newUser.isAgrupamiento,
+      phoneNumber: newUser.phoneNumber,
+      payrollNumber: newUser.payrollNumber
     };
-
     setUsers(prev => [...prev, userToAdd]);
-    setNewUser({
-      fullName: '',
-      username: '',
-      password: '',
-      role: 'PATRULLERO',
-      assignedRegion: REGIONS[0],
-      isAgrupamiento: false
-    });
+    setNewUser({ fullName: '', username: '', password: '', role: 'PATRULLERO', assignedRegion: REGIONS[0], isAgrupamiento: false, phoneNumber: '', payrollNumber: '' });
   };
 
-  const startEditUser = (user: User) => {
-    setEditingUser(user);
-    setNewUser({ ...user });
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  const saveEditUser = () => {
-    if (!editingUser) return;
-    setUsers(prev => prev.map(u => u.id === editingUser.id ? { ...u, ...newUser as User, fullName: removeAccents(newUser.fullName || '') } : u));
-    setEditingUser(null);
-    setNewUser({ fullName: '', username: '', password: '', role: 'PATRULLERO', assignedRegion: REGIONS[0], isAgrupamiento: false });
-  };
-
-  const deleteUser = (id: string) => {
-    if (confirm('¿ELIMINAR ESTE USUARIO DEFINITIVAMENTE?')) {
-      setUsers(prev => prev.filter(u => u.id !== id));
-    }
-  };
-
-  // Catalog Management
-  const addType = () => {
-    if (newType && !opTypes.includes(removeAccents(newType))) {
-      setOpTypes([...opTypes, removeAccents(newType)]);
-      setNewType("");
-    }
-  };
-
-  const removeType = (index: number) => {
-    const newList = [...opTypes];
-    newList.splice(index, 1);
-    setOpTypes(newList);
-  };
-
-  // Corporation Management
-  const addCorporation = () => {
-    if (newCorp && !corporationsCatalog.includes(removeAccents(newCorp))) {
-      setCorporationsCatalog([...corporationsCatalog, removeAccents(newCorp)]);
-      setNewCorp("");
-    }
-  };
-
-  const removeCorporation = (index: number) => {
-    const newList = [...corporationsCatalog];
-    newList.splice(index, 1);
-    setCorporationsCatalog(newList);
-  };
-
-  // Colony Management
-  const addColony = (e: React.FormEvent) => {
+  const saveUserEdit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newColony.colony || !newColony.quadrant) return;
-    
-    const entry = { ...newColony, colony: removeAccents(newColony.colony) };
-    const exists = coloniaCatalog.some(c => c.colony === entry.colony && c.region === entry.region);
-    
-    if (exists) {
-      alert("ESTA COLONIA YA EXISTE EN ESTA REGION");
-      return;
-    }
+    if (!editingUser) return;
+    setUsers(prev => prev.map(u => u.id === editingUser.id ? editingUser : u));
+    setEditingUser(null);
+  };
 
-    setColoniaCatalog([...coloniaCatalog, entry]);
+  const deleteUser = (id: string) => { if (confirm('¿ELIMINAR ESTE USUARIO?')) setUsers(prev => prev.filter(u => u.id !== id)); };
+
+  const addItem = (item: string, list: string[], setList: (v: string[]) => void, setInput: (v: string) => void) => {
+    const val = removeAccents(item);
+    if (val && !list.includes(val)) { 
+      const newList = [...list, val];
+      setList(newList); 
+      setInput(""); 
+    }
+  };
+
+  const addColony = () => {
+    if (!newColony.colony || !newColony.quadrant) return;
+    setColoniaCatalog([...coloniaCatalog, { ...newColony, colony: removeAccents(newColony.colony) }]);
     setNewColony({ ...newColony, colony: '' });
   };
 
-  const removeColony = (col: string, reg: string) => {
-    if (confirm(`¿ELIMINAR LA COLONIA ${col}?`)) {
-      setColoniaCatalog(coloniaCatalog.filter(c => !(c.colony === col && c.region === reg)));
+  const removeItem = (val: string, list: string[], setList: (v: string[]) => void) => {
+    setList(list.filter(i => i !== val));
+  };
+
+  const removeColony = (col: string, region: string) => {
+    if (confirm(`¿ELIMINAR COLONIA ${col}?`)) {
+      setColoniaCatalog(coloniaCatalog.filter(c => !(c.colony === col && c.region === region)));
     }
   };
 
-  const filteredColonies = useMemo(() => {
-    let list = [...coloniaCatalog].sort((a, b) => a.colony.localeCompare(b.colony));
-    if (colonyFilterRegion !== "TODOS") {
-      list = list.filter(c => c.region === colonyFilterRegion);
-    }
-    return list;
-  }, [coloniaCatalog, colonyFilterRegion]);
-
-  const moveItem = (list: any[], setList: (v: any[]) => void, index: number, direction: 'up' | 'down') => {
+  const moveItem = (list: string[], setList: (v: string[]) => void, item: string, direction: 'up' | 'down') => {
+    const index = list.indexOf(item);
+    if (index === -1) return;
     const newList = [...list];
-    const targetIndex = direction === 'up' ? index - 1 : index + 1;
-    if (targetIndex >= 0 && targetIndex < newList.length) {
-      [newList[index], newList[targetIndex]] = [newList[targetIndex], newList[index]];
+    const target = direction === 'up' ? index - 1 : index + 1;
+    if (target >= 0 && target < newList.length) {
+      [newList[index], newList[target]] = [newList[target], newList[index]];
       setList(newList);
     }
   };
 
-  const downloadCSV = () => {
-    if (!dateRange.start || !dateRange.end) {
-      alert("POR FAVOR SELECCIONE EL RANGO DE FECHAS");
-      return;
-    }
-
-    const startLimit = new Date(`${dateRange.start}T09:00:00`);
-    const endLimit = new Date(`${dateRange.end}T09:00:00`);
-    endLimit.setDate(endLimit.getDate() + 1);
-
-    let list = operatives.filter(op => {
-      const opDateTime = new Date(`${op.startDate}T${op.startTime}:00`);
-      return opDateTime >= startLimit && opDateTime < endLimit;
-    });
-
-    if (list.length === 0) {
-      alert("NO SE ENCONTRARON REGISTROS EN EL PERIODO SELECCIONADO");
-      return;
-    }
-
-    const headers = [
-      "ID", "TIPO", "ESTATUS DETALLADO", "ESTATUS", "FECHA", "HORA INICIO", "HORA CIERRE", 
-      "REGION", "CUADRANTE", "COLONIA", "CALLE", "COORDENADAS", "REPRESENTANTE", 
-      "TELEFONO_REP", "PARTICIPANTES", "REVISIONES_PERSONAS", 
-      "REVISIONES_TRANSPORTE_PUBLICO", "REVISIONES_PARTICULARES", "REVISIONES_MOTOCICLETAS",
-      "DETENIDOS", "PETICIONES_VECINALES"
-    ];
-
-    const escapeCSV = (val: any) => {
-      if (val === null || val === undefined) return '""';
-      const str = removeAccents(String(val)).trim();
-      return `"${str.replace(/"/g, '""')}"`;
-    };
-
-    const rows = list.map(op => [
-      escapeCSV(op.id), escapeCSV(op.type), escapeCSV(op.conclusion?.result || op.specificType || 'EN DESARROLLO'), 
-      escapeCSV(op.status), escapeCSV(op.startDate.split('-').reverse().join('/')), 
-      escapeCSV(op.startTime), escapeCSV(op.conclusion?.concludedAt || '--:--'), 
-      escapeCSV(op.region), escapeCSV(op.quadrant), escapeCSV(op.location.colony), 
-      escapeCSV(op.location.street), escapeCSV(`${op.location.latitude.toFixed(6)}, ${op.location.longitude.toFixed(6)}`), 
-      escapeCSV(op.conclusion?.reunionDetails?.representativeName || ''),
-      escapeCSV(op.conclusion?.reunionDetails?.phone || ''),
-      escapeCSV(op.conclusion?.reunionDetails?.participantCount || ''),
-      escapeCSV(op.conclusion?.peopleChecked || 0), 
-      escapeCSV(op.conclusion?.publicTransportChecked || 0),
-      escapeCSV(op.conclusion?.privateVehiclesChecked || 0),
-      escapeCSV(op.conclusion?.motorcyclesChecked || 0),
-      escapeCSV(op.conclusion?.detaineesCount || 0), 
-      escapeCSV(op.conclusion?.reunionDetails?.petitions ? op.conclusion.reunionDetails.petitions.replace(/\n/g, ' ') : '')
-    ]);
-
-    const csvContent = "\uFEFF" + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement("a");
-    const url = URL.createObjectURL(blob);
-    link.setAttribute("href", url);
-    link.setAttribute("download", `OPERATIVOS_IXTAPALUCA_${dateRange.start}_AL_${dateRange.end}.csv`);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  const sortAlphabetically = (list: string[], setList: (v: string[]) => void) => {
+    setList([...list].sort());
   };
 
-  const canManageUsers = currentUserRole === 'ADMIN';
+  const downloadUsersCSV = () => {
+    const headers = ["ID", "NOMBRE COMPLETO", "USUARIO", "PASSWORD", "ROL", "REGION ASIGNADA", "AGRUPAMIENTO", "TELEFONO", "NOMINA"];
+    const rows = users.map(u => [
+      u.id, u.fullName, u.username, u.password || 'N/A', u.role, u.assignedRegion || 'N/A', u.isAgrupamiento ? 'SI' : 'NO', u.phoneNumber || 'N/A', u.payrollNumber || 'N/A'
+    ].map(v => `"${String(v).replace(/"/g, '""')}"`));
+    
+    const csvContent = "\uFEFF" + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `BASE_DATOS_USUARIOS_${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+  };
+
+  const handleImportCSV = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const text = event.target?.result as string;
+      if (!text) return;
+
+      const lines = text.split(/\r?\n/);
+      if (lines.length < 2) return;
+
+      let added = 0;
+      let updated = 0;
+
+      const parseCSVLine = (line: string) => {
+        const result = [];
+        let cur = '';
+        let inQuotes = false;
+        for (let i = 0; i < line.length; i++) {
+          const char = line[i];
+          if (char === '"') {
+            inQuotes = !inQuotes;
+          } else if (char === ',' && !inQuotes) {
+            result.push(cur.trim());
+            cur = '';
+          } else {
+            cur += char;
+          }
+        }
+        result.push(cur.trim());
+        return result;
+      };
+
+      setUsers(prevUsers => {
+        const newUsersList = [...prevUsers];
+        
+        for (let i = 1; i < lines.length; i++) {
+          const line = lines[i].trim();
+          if (!line || line.length < 5) continue;
+          
+          const parts = parseCSVLine(line);
+          if (parts.length < 5) continue;
+
+          // Header: ID, NOMBRE COMPLETO, USUARIO, PASSWORD, ROL, REGION ASIGNADA, AGRUPAMIENTO, TELEFONO, NOMINA
+          const [id, fullName, username, password, role, assignedRegion, isAgrupamiento, phoneNumber, payrollNumber] = parts;
+
+          if (!username || !fullName || !role) continue;
+
+          const roleVal = role.toUpperCase() as Role;
+          const isAgrup = isAgrupamiento === 'SI';
+          const passVal = password === 'N/A' ? '' : password;
+          const regVal = assignedRegion === 'N/A' ? '' : assignedRegion;
+          const phoneVal = phoneNumber === 'N/A' ? '' : phoneNumber;
+          const payVal = payrollNumber === 'N/A' ? '' : payrollNumber;
+
+          const existingUserIndex = newUsersList.findIndex(u => u.id === id || u.username === username);
+
+          const userData: User = {
+            id: id || Math.random().toString(36).substring(2, 11),
+            fullName: removeAccents(fullName),
+            username: username,
+            password: passVal,
+            role: roleVal,
+            assignedRegion: regVal,
+            isAgrupamiento: isAgrup,
+            phoneNumber: phoneVal,
+            payrollNumber: payVal
+          };
+
+          if (existingUserIndex !== -1) {
+            const existing = newUsersList[existingUserIndex];
+            const hasChanges = 
+              existing.fullName !== userData.fullName ||
+              existing.password !== userData.password ||
+              existing.role !== userData.role ||
+              existing.assignedRegion !== userData.assignedRegion ||
+              existing.isAgrupamiento !== userData.isAgrupamiento ||
+              existing.phoneNumber !== userData.phoneNumber ||
+              existing.payrollNumber !== userData.payrollNumber;
+
+            if (hasChanges) {
+              newUsersList[existingUserIndex] = { ...existing, ...userData };
+              updated++;
+            }
+          } else {
+            newUsersList.push(userData);
+            added++;
+          }
+        }
+        
+        if (added > 0 || updated > 0) {
+          setTimeout(() => alert(`IMPORTACIÓN COMPLETADA:\n${added} USUARIOS NUEVOS\n${updated} USUARIOS ACTUALIZADOS`), 100);
+        } else {
+          setTimeout(() => alert("NO SE ENCONTRARON CAMBIOS NI USUARIOS NUEVOS."), 100);
+        }
+
+        return newUsersList;
+      });
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  };
+
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value.replace(/\D/g, '').slice(0, 10);
+    if (editingUser) {
+      setEditingUser({...editingUser, phoneNumber: val});
+    } else {
+      setNewUser({...newUser, phoneNumber: val});
+    }
+  };
+
+  const getCurrentList = () => {
+    if (activeTab === 'catalog') return opTypes;
+    if (activeTab === 'corporations') return corporationsCatalog;
+    if (activeTab === 'crimes') return crimesCatalog;
+    if (activeTab === 'ranks') return ranksCatalog;
+    if (activeTab === 'meetingTopics') return meetingTopicsCatalog;
+    return faultsCatalog;
+  };
+
+  const getSetList = () => {
+    if (activeTab === 'catalog') return setOpTypes;
+    if (activeTab === 'corporations') return setCorporationsCatalog;
+    if (activeTab === 'crimes') return setCrimesCatalog;
+    if (activeTab === 'ranks') return setRanksCatalog;
+    if (activeTab === 'meetingTopics') return setMeetingTopicsCatalog;
+    return setFaultsCatalog;
+  };
 
   return (
     <div className="space-y-6 animate-in slide-in-from-bottom-4 duration-500 pb-20 uppercase">
-      <header>
-        <h2 className="text-3xl font-black uppercase">PANEL DE ADMINISTRACION</h2>
-        <div className="flex gap-2 mt-4 overflow-x-auto pb-2 no-scrollbar scroll-smooth">
-          {canManageUsers && (
-            <TabButton active={activeTab === 'users'} onClick={() => setActiveTab('users')} icon={<UsersIcon />} label="USUARIOS" />
-          )}
-          <TabButton active={activeTab === 'catalog'} onClick={() => setActiveTab('catalog')} icon={<ShieldAlert />} label="TIPOS OPERATIVO" />
-          <TabButton active={activeTab === 'corporations'} onClick={() => setActiveTab('corporations')} icon={<Building2 />} label="CORPORACIONES" />
-          <TabButton active={activeTab === 'colonies'} onClick={() => setActiveTab('colonies')} icon={<MapPin />} label="COLONIAS" />
-          <TabButton active={activeTab === 'export'} onClick={() => setActiveTab('export')} icon={<Database />} label="DATOS" />
-        </div>
+      <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <h2 className="text-3xl font-black uppercase tracking-tight">ADMINISTRACION</h2>
+        {activeTab === 'users' && currentUserRole === 'ADMIN' && (
+          <div className="flex gap-2">
+            <input 
+              type="file" 
+              ref={fileInputRef} 
+              onChange={handleImportCSV} 
+              accept=".csv" 
+              className="hidden" 
+            />
+            <button 
+              onClick={() => fileInputRef.current?.click()}
+              className="flex-1 md:flex-none bg-blue-600 p-3 rounded-xl hover:bg-blue-500 transition-all flex items-center justify-center gap-2 text-[10px] font-black uppercase shadow-lg"
+            >
+              <Upload className="w-4 h-4" /> IMPORTAR
+            </button>
+            <button 
+              onClick={downloadUsersCSV} 
+              className="flex-1 md:flex-none bg-emerald-600 p-3 rounded-xl hover:bg-emerald-500 transition-all flex items-center justify-center gap-2 text-[10px] font-black uppercase shadow-lg"
+            >
+              <Download className="w-4 h-4" /> EXPORTAR
+            </button>
+          </div>
+        )}
       </header>
+      
+      <div className="flex gap-2 mt-4 overflow-x-auto pb-2 no-scrollbar scroll-smooth">
+        {currentUserRole === 'ADMIN' && <TabButton active={activeTab === 'users'} onClick={() => setActiveTab('users')} icon={<UsersIcon />} label="USUARIOS" />}
+        <TabButton active={activeTab === 'catalog'} onClick={() => setActiveTab('catalog')} icon={<ShieldAlert />} label="TIPOS" />
+        <TabButton active={activeTab === 'corporations'} onClick={() => setActiveTab('corporations')} icon={<Building2 />} label="CORPS" />
+        <TabButton active={activeTab === 'crimes'} onClick={() => setActiveTab('crimes')} icon={<Gavel />} label="DELITOS" />
+        <TabButton active={activeTab === 'faults'} onClick={() => setActiveTab('faults')} icon={<AlertTriangle />} label="FALTAS" />
+        <TabButton active={activeTab === 'ranks'} onClick={() => setActiveTab('ranks')} icon={<UserCheck />} label="RANGOS" />
+        <TabButton active={activeTab === 'meetingTopics'} onClick={() => setActiveTab('meetingTopics')} icon={<MessageSquare />} label="REUNION" />
+        <TabButton active={activeTab === 'colonies'} onClick={() => setActiveTab('colonies')} icon={<MapPin />} label="COLONIAS" />
+      </div>
 
-      {activeTab === 'users' && canManageUsers && (
-        <div className="space-y-6 animate-in fade-in duration-300 uppercase">
-          <section className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl uppercase">
-            <div className="flex items-center gap-3 border-b border-slate-800 pb-4 mb-6">
-              {editingUser ? <Edit2 className="w-6 h-6 text-emerald-500" /> : <UserPlus className="w-6 h-6 text-blue-500" />}
-              <h3 className="font-black text-lg uppercase">{editingUser ? `EDITANDO: ${editingUser.username}` : 'REGISTRAR NUEVO USUARIO'}</h3>
-              {editingUser && (
-                <button onClick={() => { setEditingUser(null); setNewUser({ fullName: '', username: '', password: '', role: 'PATRULLERO', assignedRegion: REGIONS[0], isAgrupamiento: false }); }} className="ml-auto text-slate-500 hover:text-white p-2">
-                  <X className="w-5 h-5" />
+      {activeTab === 'users' && currentUserRole === 'ADMIN' && (
+        <div className="space-y-6">
+          <section className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
+            <h3 className="font-black border-b border-slate-800 pb-2 uppercase">
+              {editingUser ? 'EDITAR USUARIO' : 'REGISTRO DE USUARIOS'}
+            </h3>
+            <form onSubmit={editingUser ? saveUserEdit : addUser} className="grid grid-cols-2 gap-4">
+              <input type="text" placeholder="NOMBRE COMPLETO" className="bg-slate-950 border border-slate-800 p-3 rounded-xl text-xs" value={editingUser ? editingUser.fullName : newUser.fullName} onChange={e => editingUser ? setEditingUser({...editingUser, fullName: e.target.value}) : setNewUser({...newUser, fullName: e.target.value})} />
+              <input type="text" placeholder="USUARIO" className="bg-slate-950 border border-slate-800 p-3 rounded-xl text-xs" value={editingUser ? editingUser.username : newUser.username} onChange={e => editingUser ? setEditingUser({...editingUser, username: e.target.value}) : setNewUser({...newUser, username: e.target.value})} />
+              <input type="text" placeholder="CONTRASEÑA" className="bg-slate-950 border border-slate-800 p-3 rounded-xl text-xs" value={editingUser ? editingUser.password : newUser.password} onChange={e => editingUser ? setEditingUser({...editingUser, password: e.target.value}) : setNewUser({...newUser, password: e.target.value})} />
+              <select className="bg-slate-950 border border-slate-800 p-3 rounded-xl text-xs" value={editingUser ? editingUser.role : newUser.role} onChange={e => editingUser ? setEditingUser({...editingUser, role: e.target.value as Role}) : setNewUser({...newUser, role: e.target.value as Role})}>
+                {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
+              </select>
+              <input type="tel" maxLength={10} placeholder="TELEFONO" className="bg-slate-950 border border-slate-800 p-3 rounded-xl text-xs" value={editingUser ? editingUser.phoneNumber : newUser.phoneNumber} onChange={handlePhoneChange} />
+              <input type="text" placeholder="NO. NOMINA" className="bg-slate-950 border border-slate-800 p-3 rounded-xl text-xs" value={editingUser ? editingUser.payrollNumber : newUser.payrollNumber} onChange={e => editingUser ? setEditingUser({...editingUser, payrollNumber: e.target.value}) : setNewUser({...newUser, payrollNumber: e.target.value})} />
+              
+              <div className="col-span-2 flex items-center gap-4 bg-slate-950 p-3 rounded-xl border border-slate-800">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox" checked={editingUser ? editingUser.isAgrupamiento : newUser.isAgrupamiento} onChange={e => editingUser ? setEditingUser({...editingUser, isAgrupamiento: e.target.checked}) : setNewUser({...newUser, isAgrupamiento: e.target.checked})} />
+                  <span className="text-[10px] font-black">ADSCURITO A AGRUPAMIENTO</span>
+                </label>
+                {!(editingUser ? editingUser.isAgrupamiento : newUser.isAgrupamiento) && (
+                   <select className="flex-1 bg-slate-900 border border-slate-700 p-1.5 rounded text-[10px]" value={editingUser ? editingUser.assignedRegion : newUser.assignedRegion} onChange={e => editingUser ? setEditingUser({...editingUser, assignedRegion: e.target.value}) : setNewUser({...newUser, assignedRegion: e.target.value})}>
+                     {REGIONS.map(r => <option key={r} value={r}>{r}</option>)}
+                   </select>
+                )}
+              </div>
+
+              <div className="col-span-2 flex gap-2">
+                {editingUser && (
+                  <button type="button" onClick={() => setEditingUser(null)} className="flex-1 bg-slate-800 font-black py-3 rounded-xl">CANCELAR</button>
+                )}
+                <button type="submit" className="flex-1 bg-blue-600 font-black py-3 rounded-xl">
+                  {editingUser ? 'GUARDAR CAMBIOS' : 'CREAR USUARIO'}
                 </button>
-              )}
-            </div>
-            
-            <form onSubmit={editingUser ? (e) => { e.preventDefault(); saveEditUser(); } : addUser} className="space-y-4 uppercase">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 uppercase">
-                <label className="block">
-                  <span className="text-xs text-slate-500 uppercase font-bold">NOMBRE COMPLETO</span>
-                  <input 
-                    type="text" required
-                    className="mt-1 w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm focus:ring-2 focus:ring-blue-600 outline-none text-white uppercase"
-                    value={newUser.fullName}
-                    onChange={e => setNewUser({...newUser, fullName: removeAccents(e.target.value)})}
-                  />
-                </label>
-                <label className="block">
-                  <span className="text-xs text-slate-500 uppercase font-bold">NOMBRE DE CUENTA</span>
-                  <input 
-                    type="text" required
-                    className="mt-1 w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm focus:ring-2 focus:ring-blue-600 outline-none text-white"
-                    value={newUser.username}
-                    onChange={e => setNewUser({...newUser, username: e.target.value})}
-                  />
-                </label>
               </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 uppercase">
-                <label className="block">
-                  <span className="text-xs text-slate-500 uppercase font-bold">CONTRASEÑA</span>
-                  <input 
-                    type="text" required
-                    className="mt-1 w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm focus:ring-2 focus:ring-blue-600 outline-none text-white"
-                    value={newUser.password}
-                    onChange={e => setNewUser({...newUser, password: e.target.value})}
-                  />
-                </label>
-                <label className="block">
-                  <span className="text-xs text-slate-500 uppercase font-bold">TIPO DE USUARIO</span>
-                  <select 
-                    className="mt-1 w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm focus:ring-2 focus:ring-blue-600 outline-none text-white uppercase"
-                    value={newUser.role}
-                    onChange={e => setNewUser({...newUser, role: e.target.value as Role})}
-                  >
-                    {ROLES.map(r => <option key={r} value={r} className="bg-slate-900 uppercase">{r.replace('_', ' ')}</option>)}
-                  </select>
-                </label>
-              </div>
-
-              {!['ADMIN', 'DIRECTOR', 'ANALISTA'].includes(newUser.role!) && (
-                <div className="p-4 bg-slate-950 rounded-xl border border-slate-800 space-y-4 animate-in slide-in-from-top-2 uppercase">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 uppercase">
-                    <label className="block">
-                      <span className="text-xs text-slate-500 uppercase font-bold">REGION ASIGNADA</span>
-                      <select 
-                        className="mt-1 w-full bg-slate-900 border border-slate-800 rounded-lg p-3 text-sm focus:ring-2 focus:ring-blue-600 outline-none text-white uppercase"
-                        value={newUser.assignedRegion}
-                        onChange={e => setNewUser({...newUser, assignedRegion: e.target.value})}
-                      >
-                        {REGIONS.filter(r => r.startsWith('REGION')).map(r => <option key={r} value={r} className="bg-slate-900 uppercase">{r}</option>)}
-                      </select>
-                    </label>
-                    <label className="flex items-center gap-3 mt-6 cursor-pointer group uppercase">
-                      <div className="relative">
-                        <input 
-                          type="checkbox" 
-                          className="sr-only peer"
-                          checked={newUser.isAgrupamiento}
-                          onChange={e => setNewUser({...newUser, isAgrupamiento: e.target.checked})}
-                        />
-                        <div className="w-11 h-6 bg-slate-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                      </div>
-                      <span className="text-sm font-medium text-slate-400 group-hover:text-white transition-colors uppercase">¿ES AGRUPAMIENTO? (MUNICIPIO COMPLETO)</span>
-                    </label>
-                  </div>
-                </div>
-              )}
-
-              <button type="submit" className={`w-full ${editingUser ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-blue-600 hover:bg-blue-700'} text-white font-black py-4 rounded-xl flex items-center justify-center gap-2 transition-all shadow-lg active:scale-[0.98] uppercase`}>
-                {editingUser ? <><Save className="w-5 h-5" /> GUARDAR CAMBIOS</> : <><Plus className="w-5 h-5" /> CREAR USUARIO</>}
-              </button>
             </form>
           </section>
-
-          <section className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl uppercase">
-            <h3 className="font-black text-lg border-b border-slate-800 pb-4 mb-4 uppercase">USUARIOS ACTIVOS</h3>
-            <div className="space-y-3 uppercase">
+          
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4 space-y-2">
+            <h4 className="text-[10px] font-black text-slate-500 mb-3 px-1 uppercase">USUARIOS REGISTRADOS</h4>
+            <div className="max-h-[600px] overflow-y-auto pr-2 custom-scrollbar space-y-2">
               {users.map(u => (
-                <div key={u.id} className={`p-4 bg-slate-950 rounded-xl border ${editingUser?.id === u.id ? 'border-emerald-500 shadow-lg shadow-emerald-500/10' : 'border-slate-800'} flex items-center justify-between group hover:border-slate-700 transition-all uppercase`}>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 uppercase">
-                      <p className="font-bold text-sm text-white uppercase">{removeAccents(u.fullName)}</p>
-                      <span className="text-[8px] font-black px-1.5 py-0.5 bg-blue-500/10 text-blue-500 rounded border border-blue-500/20 uppercase">{u.role}</span>
+                <div key={u.id} className="flex justify-between items-center p-3 bg-slate-950 border border-slate-800 rounded-xl hover:border-slate-700 transition-colors">
+                  <div className="flex flex-col">
+                    <span className="text-xs font-bold text-white uppercase">{u.fullName} (@{u.username})</span>
+                    <div className="flex gap-2 items-center mt-1">
+                      <span className="text-[8px] bg-blue-500/10 text-blue-500 px-1 rounded uppercase font-black">{u.role}</span>
+                      <span className="text-[8px] text-slate-600 uppercase font-bold">{u.payrollNumber ? `NOMINA: ${u.payrollNumber}` : 'SIN NOMINA'}</span>
                     </div>
-                    <p className="text-xs text-slate-500 font-mono mt-1 uppercase">@{u.username} • {u.isAgrupamiento ? 'MUNICIPIO COMPLETO' : (removeAccents(u.assignedRegion || 'GLOBAL'))}</p>
                   </div>
-                  <div className="flex items-center gap-1 uppercase">
-                    <button 
-                      onClick={() => startEditUser(u)} 
-                      className={`p-2 transition-colors uppercase ${editingUser?.id === u.id ? 'text-emerald-500' : 'text-slate-500 hover:text-emerald-500'}`}
-                      title="EDITAR USUARIO"
-                    >
-                      <Edit2 className="w-5 h-5" />
-                    </button>
-                    {u.username !== 'admin' && (
-                      <button 
-                        onClick={() => deleteUser(u.id)} 
-                        className="p-2 text-slate-500 hover:text-red-500 transition-colors uppercase"
-                        title="ELIMINAR USUARIO"
-                      >
-                        <Trash2 className="w-5 h-5" />
-                      </button>
-                    )}
+                  <div className="flex items-center gap-1">
+                    <button onClick={() => setEditingUser(u)} className="text-blue-500 hover:bg-blue-500/10 p-2 rounded-lg transition-colors"><Edit2 className="w-4 h-4" /></button>
+                    <button onClick={() => deleteUser(u.id)} className="text-red-500 hover:bg-red-500/10 p-2 rounded-lg transition-colors"><Trash2 className="w-4 h-4" /></button>
                   </div>
                 </div>
               ))}
             </div>
-          </section>
+          </div>
         </div>
       )}
 
-      {activeTab === 'catalog' && (
-        <section className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-6 shadow-xl animate-in fade-in uppercase">
-          <div className="flex items-center gap-3 border-b border-slate-800 pb-4 uppercase">
-            <ShieldAlert className="w-6 h-6 text-yellow-500" />
-            <h3 className="font-black text-lg uppercase">TIPOS DE OPERATIVO</h3>
+      {['catalog', 'corporations', 'crimes', 'faults', 'ranks', 'meetingTopics'].includes(activeTab) && (
+        <section className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4">
+          <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+            <h3 className="font-black uppercase">GESTION DE CATALOGO</h3>
+            <button onClick={() => sortAlphabetically(getCurrentList(), getSetList())} className="flex items-center gap-1.5 text-[9px] font-black bg-blue-600/10 text-blue-500 border border-blue-500/20 px-2 py-1 rounded hover:bg-blue-600/20 transition-all uppercase">
+              <SortAsc className="w-3 h-3" /> ORDENAR A-Z
+            </button>
           </div>
-          <div className="space-y-4">
-            <div className="flex gap-2 uppercase">
-              <input 
-                type="text" 
-                placeholder="NOMBRE DEL OPERATIVO..."
-                className="flex-1 bg-slate-950 border border-slate-800 rounded-xl p-4 text-sm focus:ring-2 focus:ring-blue-600 outline-none text-white uppercase"
-                value={newType}
-                onChange={e => setNewType(removeAccents(e.target.value))}
-                onKeyDown={e => e.key === 'Enter' && addType()}
-              />
-              <button onClick={addType} className="bg-blue-600 p-4 rounded-xl hover:bg-blue-700 transition-colors shadow-lg active:scale-95 uppercase">
-                <Plus className="w-6 h-6" />
-              </button>
-            </div>
-            <div className="grid grid-cols-1 gap-2 max-h-[50vh] overflow-y-auto pr-2 custom-scrollbar uppercase">
-              {opTypes.map((t, index) => (
-                <div key={`${t}-${index}`} className="group p-3 bg-slate-950 border border-slate-800 rounded-xl flex items-center justify-between hover:border-slate-700 transition-all uppercase">
-                  <span className="text-xs font-bold uppercase text-white">{removeAccents(t)}</span>
-                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity uppercase">
-                    <button onClick={() => moveItem(opTypes, setOpTypes, index, 'up')} disabled={index === 0} className="p-1.5 text-slate-500 hover:text-blue-500 disabled:opacity-10"><ChevronUp className="w-4 h-4" /></button>
-                    <button onClick={() => moveItem(opTypes, setOpTypes, index, 'down')} disabled={index === opTypes.length - 1} className="p-1.5 text-slate-500 hover:text-blue-500 disabled:opacity-10"><ChevronDown className="w-4 h-4" /></button>
-                    <button onClick={() => removeType(index)} className="p-1.5 text-slate-500 hover:text-red-500"><Trash2 className="w-4 h-4" /></button>
-                  </div>
+          <div className="flex gap-2">
+            <input type="text" placeholder="NUEVO VALOR..." className="flex-1 bg-slate-950 border border-slate-800 p-3 rounded-xl text-xs text-white" 
+              value={activeTab === 'catalog' ? newType : activeTab === 'corporations' ? newCorp : activeTab === 'crimes' ? newCrime : activeTab === 'ranks' ? newRank : activeTab === 'meetingTopics' ? newMeetingTopic : newFault} 
+              onChange={e => activeTab === 'catalog' ? setNewType(e.target.value) : activeTab === 'corporations' ? setNewCorp(e.target.value) : activeTab === 'crimes' ? setNewCrime(e.target.value) : activeTab === 'ranks' ? setNewRank(e.target.value) : activeTab === 'meetingTopics' ? setNewMeetingTopic(e.target.value) : setNewFault(e.target.value)} />
+            <button onClick={() => activeTab === 'catalog' ? addItem(newType, opTypes, setOpTypes, setNewType) : activeTab === 'corporations' ? addItem(newCorp, corporationsCatalog, setCorporationsCatalog, setNewCorp) : activeTab === 'crimes' ? addItem(newCrime, crimesCatalog, setCrimesCatalog, setNewCrime) : activeTab === 'ranks' ? addItem(newRank, ranksCatalog, setRanksCatalog, setNewRank) : activeTab === 'meetingTopics' ? addItem(newMeetingTopic, meetingTopicsCatalog, setMeetingTopicsCatalog, setNewMeetingTopic) : addItem(newFault, faultsCatalog, setFaultsCatalog, setNewFault)} className="bg-blue-600 p-3 rounded-xl hover:bg-blue-500 transition-colors"><Plus /></button>
+          </div>
+          <div className="max-h-[500px] overflow-y-auto pr-2 space-y-2 custom-scrollbar">
+            {getCurrentList().map((item, index) => (
+              <div key={`${item}-${index}`} className="flex justify-between items-center p-3 bg-slate-950 rounded-xl border border-slate-800 hover:border-slate-700 transition-all">
+                <span className="text-[10px] font-black tracking-tight flex-1 text-white">{item}</span>
+                <div className="flex items-center gap-1">
+                  <button onClick={() => moveItem(getCurrentList(), getSetList(), item, 'up')} className="p-1.5 text-slate-600 hover:text-blue-500 transition-colors"><ChevronUp className="w-4 h-4" /></button>
+                  <button onClick={() => moveItem(getCurrentList(), getSetList(), item, 'down')} className="p-1.5 text-slate-600 hover:text-blue-500 transition-colors"><ChevronDown className="w-4 h-4" /></button>
+                  <button onClick={() => removeItem(item, getCurrentList(), getSetList())} className="p-1.5 text-red-500/50 hover:text-red-500 transition-colors ml-2"><Trash2 className="w-4 h-4" /></button>
                 </div>
-              ))}
-            </div>
-          </div>
-        </section>
-      )}
-
-      {activeTab === 'corporations' && (
-        <section className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-6 shadow-xl animate-in fade-in uppercase">
-          <div className="flex items-center gap-3 border-b border-slate-800 pb-4 uppercase">
-            <Building2 className="w-6 h-6 text-emerald-500" />
-            <h3 className="font-black text-lg uppercase">CATALOGO DE CORPORACIONES</h3>
-          </div>
-          <div className="space-y-4">
-            <div className="flex gap-2 uppercase">
-              <input 
-                type="text" 
-                placeholder="NOMBRE DE LA CORPORACION (EJ. SEDENA)..."
-                className="flex-1 bg-slate-950 border border-slate-800 rounded-xl p-4 text-sm focus:ring-2 focus:ring-blue-600 outline-none text-white uppercase"
-                value={newCorp}
-                onChange={e => setNewCorp(removeAccents(e.target.value))}
-                onKeyDown={e => e.key === 'Enter' && addCorporation()}
-              />
-              <button onClick={addCorporation} className="bg-emerald-600 p-4 rounded-xl hover:bg-emerald-700 transition-colors shadow-lg active:scale-95 uppercase">
-                <Plus className="w-6 h-6" />
-              </button>
-            </div>
-            <div className="grid grid-cols-1 gap-2 max-h-[50vh] overflow-y-auto pr-2 custom-scrollbar uppercase">
-              {corporationsCatalog.map((corp, index) => (
-                <div key={`${corp}-${index}`} className="group p-3 bg-slate-950 border border-slate-800 rounded-xl flex items-center justify-between hover:border-slate-700 transition-all uppercase">
-                  <span className="text-xs font-bold uppercase text-white">{removeAccents(corp)}</span>
-                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity uppercase">
-                    <button onClick={() => moveItem(corporationsCatalog, setCorporationsCatalog, index, 'up')} disabled={index === 0} className="p-1.5 text-slate-500 hover:text-blue-500 disabled:opacity-10"><ChevronUp className="w-4 h-4" /></button>
-                    <button onClick={() => moveItem(corporationsCatalog, setCorporationsCatalog, index, 'down')} disabled={index === corporationsCatalog.length - 1} className="p-1.5 text-slate-500 hover:text-blue-500 disabled:opacity-10"><ChevronDown className="w-4 h-4" /></button>
-                    <button onClick={() => removeCorporation(index)} className="p-1.5 text-slate-500 hover:text-red-500"><Trash2 className="w-4 h-4" /></button>
-                  </div>
-                </div>
-              ))}
-              {corporationsCatalog.length === 0 && (
-                <p className="text-center p-8 text-slate-500 text-xs italic">NO HAY CORPORACIONES REGISTRADAS</p>
-              )}
-            </div>
+              </div>
+            ))}
           </div>
         </section>
       )}
 
       {activeTab === 'colonies' && (
-        <section className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl animate-in fade-in space-y-6 uppercase">
-          <div className="flex items-center gap-3 border-b border-slate-800 pb-4 uppercase">
-            <MapPin className="w-6 h-6 text-blue-500" />
-            <h3 className="font-black text-lg uppercase">GESTIÓN DE COLONIAS</h3>
-          </div>
-          
-          <form onSubmit={addColony} className="grid grid-cols-1 md:grid-cols-3 gap-4 bg-slate-950 p-4 rounded-xl border border-slate-800 uppercase">
-            <label className="block">
-              <span className="text-[10px] text-slate-500 font-black uppercase">REGION</span>
-              <select 
-                className="mt-1 w-full bg-slate-900 border border-slate-800 rounded-lg p-3 text-sm text-white uppercase"
-                value={newColony.region}
-                onChange={e => setNewColony({...newColony, region: e.target.value, quadrant: ''})}
-              >
-                {REGIONS.filter(r => r.startsWith('REGION')).map(r => <option key={r} value={r}>{r}</option>)}
-              </select>
-            </label>
-            <label className="block">
-              <span className="text-[10px] text-slate-500 font-black uppercase">CUADRANTE</span>
-              <select 
-                className="mt-1 w-full bg-slate-900 border border-slate-800 rounded-lg p-3 text-sm text-white uppercase"
-                value={newColony.quadrant}
-                onChange={e => setNewColony({...newColony, quadrant: e.target.value})}
-                required
-              >
-                <option value="">-- SELECCIONAR --</option>
-                {(REGION_QUADRANTS[newColony.region] || []).map(q => <option key={q} value={q}>{q}</option>)}
-              </select>
-            </label>
-            <label className="block">
-              <span className="text-[10px] text-slate-500 font-black uppercase">NOMBRE COLONIA</span>
-              <div className="flex gap-2">
-                <input 
-                  type="text" 
-                  required
-                  className="mt-1 flex-1 bg-slate-900 border border-slate-800 rounded-lg p-3 text-sm text-white uppercase outline-none"
-                  value={newColony.colony}
-                  onChange={e => setNewColony({...newColony, colony: e.target.value})}
-                  placeholder="NOMBRE..."
-                />
-                <button type="submit" className="mt-1 bg-blue-600 p-3 rounded-lg hover:bg-blue-700 transition-colors">
-                  <Plus className="w-5 h-5" />
-                </button>
-              </div>
-            </label>
-          </form>
-
-          <div className="space-y-4 uppercase">
-            <div className="flex items-center justify-between px-2">
-              <div className="flex items-center gap-2">
-                <Filter className="w-4 h-4 text-slate-500" />
-                <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">FILTRAR POR REGION</span>
-              </div>
-              <select 
-                className="bg-slate-900 border border-slate-800 rounded-lg px-3 py-1.5 text-[10px] font-black text-white uppercase"
-                value={colonyFilterRegion}
-                onChange={e => setColonyFilterRegion(e.target.value)}
-              >
-                <option value="TODOS">TODAS LAS REGIONES</option>
-                {REGIONS.filter(r => r.startsWith('REGION')).map(r => <option key={r} value={r}>{r}</option>)}
+        <section className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-4 shadow-xl">
+          <h3 className="font-black border-b border-slate-800 pb-2 uppercase tracking-widest">CATÁLOGO DE COLONIAS</h3>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <span className="text-[8px] font-black text-slate-600 ml-1">REGION</span>
+              <select className="w-full bg-slate-950 border border-slate-800 p-3 rounded-xl text-xs text-white" value={newColony.region} onChange={e => setNewColony({...newColony, region: e.target.value})}>
+                {REGIONS.map(r => <option key={r} value={r}>{r}</option>)}
               </select>
             </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar uppercase">
+            <div className="space-y-1">
+              <span className="text-[8px] font-black text-slate-600 ml-1">CUADRANTE</span>
+              <input type="text" placeholder="00" className="w-full bg-slate-950 border border-slate-800 p-3 rounded-xl text-xs text-white" value={newColony.quadrant} onChange={e => setNewColony({...newColony, quadrant: e.target.value})} />
+            </div>
+            <div className="col-span-2 space-y-1">
+              <span className="text-[8px] font-black text-slate-600 ml-1">NOMBRE COLONIA</span>
+              <input type="text" placeholder="ESCRIBA EL NOMBRE..." className="w-full bg-slate-950 border border-slate-800 p-3 rounded-xl text-xs text-white" value={newColony.colony} onChange={e => setNewColony({...newColony, colony: e.target.value})} />
+            </div>
+            <button onClick={addColony} className="col-span-2 bg-blue-600 py-4 rounded-xl font-black shadow-lg hover:bg-blue-500 transition-all uppercase">AÑADIR A LA BASE DE DATOS</button>
+          </div>
+          
+          <div className="border-t border-slate-800 pt-6 mt-4">
+            <div className="flex items-center gap-2 mb-4">
+              <Filter className="w-4 h-4 text-slate-500" />
+              <select className="flex-1 bg-slate-950 border border-slate-800 p-2.5 rounded-xl text-xs font-bold text-white" value={colonyFilterRegion} onChange={e => setColonyFilterRegion(e.target.value)}>
+                <option value="TODOS">MOSTRAR TODAS LAS REGIONES</option>
+                {REGIONS.map(r => <option key={r} value={r}>{r}</option>)}
+              </select>
+            </div>
+            <div className="max-h-[400px] overflow-y-auto pr-2 space-y-2 custom-scrollbar">
               {filteredColonies.map((c, i) => (
-                <div key={`${c.colony}-${c.region}-${i}`} className="p-3 bg-slate-950 border border-slate-800 rounded-xl flex items-center justify-between group hover:border-slate-700 transition-all uppercase">
-                  <div className="overflow-hidden">
-                    <p className="text-[10px] font-black text-blue-500 uppercase">{c.region} • C-{c.quadrant}</p>
-                    <p className="text-xs font-bold text-white truncate uppercase">{c.colony}</p>
+                <div key={`${c.colony}-${i}`} className="flex justify-between items-center p-3 bg-slate-950 border border-slate-800 rounded-xl hover:border-slate-700 transition-colors">
+                  <div className="flex flex-col">
+                    <span className="text-[10px] font-black text-white">{c.colony}</span>
+                    <span className="text-[8px] text-slate-500 font-black tracking-widest">{c.region} • CUADRANTE {c.quadrant}</span>
                   </div>
-                  <button onClick={() => removeColony(c.colony, c.region)} className="p-2 text-slate-600 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all uppercase">
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                  <button onClick={() => removeColony(c.colony, c.region)} className="p-2 text-red-500/50 hover:text-red-500 transition-colors"><Trash2 className="w-4 h-4" /></button>
                 </div>
               ))}
               {filteredColonies.length === 0 && (
-                <p className="col-span-full text-center p-12 text-slate-500 text-xs italic uppercase">NO HAY COLONIAS PARA MOSTRAR</p>
+                <p className="text-center text-slate-600 text-[10px] font-black py-10 italic uppercase">SIN RESULTADOS EN ESTA REGION</p>
               )}
             </div>
           </div>
-        </section>
-      )}
-
-      {activeTab === 'export' && (
-        <section className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-6 shadow-xl animate-in fade-in uppercase">
-          <div className="flex items-center gap-3 border-b border-slate-800 pb-4 uppercase">
-            <Database className="w-6 h-6 text-blue-500" />
-            <h3 className="font-black text-lg uppercase">DESCARGAR INFORMES</h3>
-          </div>
-
-          <div className="p-5 bg-slate-950 rounded-2xl border border-slate-800 space-y-4">
-             <p className="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                <Calendar className="w-4 h-4 text-blue-500" />
-                RANGO DEL INFORME (TURNO 09:00 - 09:00)
-             </p>
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <label className="block">
-                  <span className="text-[10px] text-slate-600 font-black uppercase">FECHA INICIO</span>
-                  <input 
-                    type="date" 
-                    className="mt-1 w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-sm text-white outline-none focus:ring-2 focus:ring-blue-600"
-                    value={dateRange.start}
-                    onChange={e => setDateRange({...dateRange, start: e.target.value})}
-                  />
-                </label>
-                <label className="block">
-                  <span className="text-[10px] text-slate-600 font-black uppercase">FECHA FIN</span>
-                  <input 
-                    type="date" 
-                    className="mt-1 w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-sm text-white outline-none focus:ring-2 focus:ring-blue-600"
-                    value={dateRange.end}
-                    onChange={e => setDateRange({...dateRange, end: e.target.value})}
-                  />
-                </label>
-             </div>
-             <p className="text-[9px] text-slate-500 font-medium leading-relaxed italic border-t border-slate-800/50 pt-2 uppercase">
-                EL INFORME INCLUIRA TODOS LOS OPERATIVOS REGISTRADOS DESDE LAS 09:00 AM DE LA FECHA DE INICIO HASTA LAS 08:59 AM DEL DIA SIGUIENTE A LA FECHA DE FIN.
-             </p>
-          </div>
-
-          <button onClick={downloadCSV} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black py-4 rounded-xl flex items-center justify-center gap-2 shadow-lg active:scale-[0.98] transition-all uppercase">
-            <Download className="w-5 h-5" /> GENERAR ARCHIVO EXCEL (CSV)
-          </button>
         </section>
       )}
     </div>
@@ -598,11 +476,8 @@ const Admin: React.FC<AdminProps> = ({
 };
 
 const TabButton: React.FC<{ active: boolean, onClick: () => void, icon: React.ReactNode, label: string }> = ({ active, onClick, icon, label }) => (
-  <button 
-    onClick={onClick}
-    className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all whitespace-nowrap border uppercase ${active ? 'bg-blue-600 border-blue-500 text-white shadow-lg' : 'bg-slate-900 border-slate-800 text-slate-500 hover:text-slate-300'}`}
-  >
-    {React.cloneElement(icon as any, { className: "w-4 h-4" })}
+  <button onClick={onClick} className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-[10px] font-black border transition-all ${active ? 'bg-blue-600 border-blue-500 text-white shadow-lg' : 'bg-slate-900 border-slate-800 text-slate-500 hover:text-slate-300'}`}>
+    {React.cloneElement(icon as any, { className: "w-3.5 h-3.5" })}
     {label}
   </button>
 );

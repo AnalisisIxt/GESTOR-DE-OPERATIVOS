@@ -9,11 +9,13 @@ export interface User {
   role: Role;
   assignedRegion?: string;
   isAgrupamiento?: boolean;
+  phoneNumber?: string;
+  payrollNumber?: string;
 }
 
 export type Shift = 'Primero' | 'Segundo' | 'Diario';
 
-export type Rank = 'Comisario' | 'Subdirector' | 'Tecnico Operativo' | 'Encargado Regonal' | 'Jefe de turno' | 'Jefe de Cuadrante' | 'Patrullero';
+export type Rank = string;
 
 export type ResultType = 'DISUACION' | 'DETENIDOS AL JUEZ CIVICO' | 'PUESTA A LA FISCALIA';
 
@@ -32,6 +34,7 @@ export interface Unit {
   inCharge: string;
   rank: Rank;
   personnelCount: number;
+  phoneNumber?: string;
 }
 
 export interface Corporation {
@@ -70,6 +73,7 @@ export interface Operative {
   id: string;
   type: string;
   specificType?: string;
+  meetingTopic?: string;
   startDate: string;
   startTime: string;
   status: 'ACTIVO' | 'CONCLUIDO';

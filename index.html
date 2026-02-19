@@ -9,8 +9,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Leaflet CSS for Map -->
-    <link rel="stylesheet" href="https://esm.sh/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
     <style>
       body {
         font-family: 'Inter', sans-serif;
@@ -31,9 +30,12 @@
       ::-webkit-scrollbar-thumb:hover {
         background: #475569;
       }
-      /* Map container fix */
+      /* Map styling */
       .leaflet-container {
-        background: #020617 !important;
+        background: #0f172a !important;
+      }
+      .leaflet-tile-pane {
+        filter: brightness(0.6) invert(1) contrast(3) hue-rotate(200deg) saturate(0.3) brightness(0.7);
       }
     </style>
   <script type="importmap">

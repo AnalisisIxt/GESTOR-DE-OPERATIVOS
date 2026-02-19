@@ -25,7 +25,15 @@ import Login from './pages/Login';
 import UserProfile from './pages/UserProfile';
 
 import { Operative, User, CatalogEntry } from './types';
-import { OPERATIVE_TYPES, COLONIA_CATALOG as DEFAULT_COLONIES, CORPORATIONS as DEFAULT_CORPORATIONS } from './constants';
+import { 
+  OPERATIVE_TYPES, 
+  COLONIA_CATALOG as DEFAULT_COLONIES, 
+  CORPORATIONS as DEFAULT_CORPORATIONS,
+  INITIAL_CRIMES,
+  INITIAL_FAULTS,
+  RANKS as DEFAULT_RANKS,
+  INITIAL_MEETING_TOPICS
+} from './constants';
 import { api } from './lib/api';
 
 const App: React.FC = () => {
@@ -35,27 +43,39 @@ const App: React.FC = () => {
   const [opTypes, setOpTypes] = useState<string[]>([]);
   const [coloniaCatalog, setColoniaCatalog] = useState<CatalogEntry[]>([]);
   const [corporationsCatalog, setCorporationsCatalog] = useState<string[]>([]);
+  const [crimesCatalog, setCrimesCatalog] = useState<string[]>([]);
+  const [faultsCatalog, setFaultsCatalog] = useState<string[]>([]);
+  const [ranksCatalog, setRanksCatalog] = useState<string[]>([]);
+  const [meetingTopicsCatalog, setMeetingTopicsCatalog] = useState<string[]>([]);
   
   const [isSyncing, setIsSyncing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Carga inicial desde el "Backend"
+  // Carga inicial
   useEffect(() => {
     const initData = async () => {
       setIsLoading(true);
       try {
-        const [ops, u, types, colonies, corps] = await Promise.all([
+        const [ops, u, types, colonies, corps, crimes, faults, ranks, topics] = await Promise.all([
           api.getOperatives(),
           api.getUsers(),
           api.getCatalog('ixta_full_op_types', OPERATIVE_TYPES),
           api.getCatalog('ixta_colonia_catalog', DEFAULT_COLONIES),
-          api.getCatalog('ixta_corporations_catalog', DEFAULT_CORPORATIONS)
+          api.getCatalog('ixta_corporations_catalog', DEFAULT_CORPORATIONS),
+          api.getCatalog('ixta_crimes_catalog', INITIAL_CRIMES),
+          api.getCatalog('ixta_faults_catalog', INITIAL_FAULTS),
+          api.getCatalog('ixta_ranks_catalog', DEFAULT_RANKS),
+          api.getCatalog('ixta_meeting_topics_catalog', INITIAL_MEETING_TOPICS)
         ]);
 
         setOperatives(ops);
         setOpTypes(types);
         setColoniaCatalog(colonies);
         setCorporationsCatalog(corps);
+        setCrimesCatalog(crimes);
+        setFaultsCatalog(faults);
+        setRanksCatalog(ranks);
+        setMeetingTopicsCatalog(topics);
 
         if (u.length === 0) {
           const initialUsers: User[] = [
@@ -119,6 +139,17 @@ const App: React.FC = () => {
     alert('CONTRASEÑA ACTUALIZADA CORRECTAMENTE');
   };
 
+  const handleSetUsers = async (updater: (prev: User[]) => User[]) => {
+    const updatedUsers = updater(users);
+    setUsers(updatedUsers);
+    await api.saveUsers(updatedUsers);
+  };
+
+  const handleSetCatalog = async (key: string, data: string[], setter: (v: string[]) => void) => {
+    setter(data);
+    await api.saveCatalog(key, data);
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center space-y-4">
@@ -178,11 +209,24 @@ const App: React.FC = () => {
           <main className="flex-1 max-w-5xl mx-auto w-full p-4 md:p-8">
             <Routes>
               <Route path="/" element={<Home operatives={operatives} user={user} />} />
-              <Route path="/new" element={<NewOperative operatives={operatives} addOperative={addOperative} opTypes={opTypes} user={user} coloniaCatalog={coloniaCatalog} corporationsCatalog={corporationsCatalog} />} />
+              <Route path="/new" element={<NewOperative operatives={operatives} addOperative={addOperative} opTypes={opTypes} user={user} coloniaCatalog={coloniaCatalog} corporationsCatalog={corporationsCatalog} ranksCatalog={ranksCatalog} meetingTopicsCatalog={meetingTopicsCatalog} />} />
               <Route path="/operatives" element={<Home operatives={operatives} showAll={true} user={user} />} />
               <Route path="/stats" element={<Statistics operatives={operatives} opTypes={opTypes} />} />
-              <Route path="/admin" element={<Admin opTypes={opTypes} setOpTypes={setOpTypes} corporationsCatalog={corporationsCatalog} setCorporationsCatalog={setCorporationsCatalog} operatives={operatives} users={users} setUsers={setUsers} currentUserRole={user.role} coloniaCatalog={coloniaCatalog} setColoniaCatalog={setColoniaCatalog} />} />
-              <Route path="/operative/:id" element={<OperativeDetails operatives={operatives} updateOperative={updateOperative} role={user.role} userId={user.id} deleteOperative={deleteOperative} coloniaCatalog={coloniaCatalog} />} />
+              <Route path="/admin" element={<Admin 
+                opTypes={opTypes} setOpTypes={(d) => handleSetCatalog('ixta_full_op_types', d, setOpTypes)} 
+                corporationsCatalog={corporationsCatalog} setCorporationsCatalog={(d) => handleSetCatalog('ixta_corporations_catalog', d, setCorporationsCatalog)}
+                crimesCatalog={crimesCatalog} setCrimesCatalog={(d) => handleSetCatalog('ixta_crimes_catalog', d, setCrimesCatalog)}
+                faultsCatalog={faultsCatalog} setFaultsCatalog={(d) => handleSetCatalog('ixta_faults_catalog', d, setFaultsCatalog)}
+                ranksCatalog={ranksCatalog} setRanksCatalog={(d) => handleSetCatalog('ixta_ranks_catalog', d, setRanksCatalog)}
+                meetingTopicsCatalog={meetingTopicsCatalog} setMeetingTopicsCatalog={(d) => handleSetCatalog('ixta_meeting_topics_catalog', d, setMeetingTopicsCatalog)}
+                operatives={operatives} users={users} setUsers={handleSetUsers} 
+                currentUserRole={user.role} coloniaCatalog={coloniaCatalog} setColoniaCatalog={(d) => handleSetCatalog('ixta_colonia_catalog', d, setColoniaCatalog)} 
+              />} />
+              <Route path="/operative/:id" element={<OperativeDetails 
+                operatives={operatives} updateOperative={updateOperative} role={user.role} userId={user.id} 
+                deleteOperative={deleteOperative} coloniaCatalog={coloniaCatalog} 
+                crimesCatalog={crimesCatalog} faultsCatalog={faultsCatalog}
+              />} />
               <Route path="/profile" element={<UserProfile user={user} updatePassword={updatePassword} />} />
               <Route path="*" element={<Navigate to="/" />} />
             </Routes>

@@ -4,11 +4,11 @@ export const removeAccents = (str: string): string => {
 };
 
 export const generateOperativeId = (date: Date, sequence: number): string => {
-  const yyyy = date.getFullYear();
+  const yy = String(date.getFullYear()).slice(-2);
   const mm = String(date.getMonth() + 1).padStart(2, '0');
   const dd = String(date.getDate()).padStart(2, '0');
   const seq = String(sequence).padStart(3, '0');
-  return `OP${yyyy}${mm}${dd}${seq}`;
+  return `OP${yy}${mm}${dd}${seq}`;
 };
 
 export const formatTime = (date: Date): string => {
