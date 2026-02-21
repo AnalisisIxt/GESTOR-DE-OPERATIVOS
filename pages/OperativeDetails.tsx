@@ -69,6 +69,7 @@ const OperativeDetails: React.FC<OperativeDetailsProps> = ({
   const [detaineesCount, setDetaineesCount] = useState(0);
   const [selectedIncident, setSelectedIncident] = useState("");
   const [otherIncident, setOtherIncident] = useState("");
+  const [colonySearch, setColonySearch] = useState("");
 
   useEffect(() => {
     if (isConcluding && operative) {
@@ -76,15 +77,17 @@ const OperativeDetails: React.FC<OperativeDetailsProps> = ({
     }
   }, [isConcluding, operative]);
 
-  const operativeRegionColonies = useMemo(() => {
-    if (!operative) return [];
-    const opRegion = removeAccents(operative.region);
+  const allColonies = useMemo(() => {
     return coloniaCatalog
-      .filter(c => removeAccents(c.region) === opRegion)
       .map(c => removeAccents(c.colony))
       .filter((value, index, self) => self.indexOf(value) === index)
       .sort();
-  }, [operative, coloniaCatalog]);
+  }, [coloniaCatalog]);
+
+  const filteredColonies = useMemo(() => {
+    const search = removeAccents(colonySearch).toLowerCase();
+    return allColonies.filter(c => removeAccents(c).toLowerCase().includes(search));
+  }, [allColonies, colonySearch]);
 
   if (!operative) return <div className="p-10 text-center uppercase font-black">OPERATIVO NO ENCONTRADO</div>;
 
@@ -248,11 +251,25 @@ const OperativeDetails: React.FC<OperativeDetailsProps> = ({
             </label>
             
             <div className="space-y-2">
-              <span className="text-[10px] font-black text-slate-500 uppercase ml-1">COLONIAS CUBIERTAS EN {operative.region}</span>
+              <div className="flex items-center justify-between ml-1">
+                <span className="text-[10px] font-black text-slate-500 uppercase">COLONIAS CUBIERTAS</span>
+                <span className="text-[9px] font-bold text-blue-500">{coveredCols.length} SELECCIONADAS</span>
+              </div>
+              <input 
+                type="text" 
+                placeholder="BUSCAR COLONIA..." 
+                className="w-full bg-slate-950 border border-slate-800 rounded-xl p-2 text-[10px] text-white outline-none focus:ring-1 focus:ring-blue-500"
+                value={colonySearch}
+                onChange={e => setColonySearch(e.target.value)}
+              />
               <div className="flex flex-wrap gap-2 min-h-[50px] max-h-48 overflow-y-auto p-3 bg-slate-950 rounded-xl border border-slate-800">
-                {operativeRegionColonies.map(c => (
-                  <button key={c} type="button" onClick={() => toggleColony(c)} className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase transition-all ${coveredCols.includes(c) ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-500 hover:text-slate-400'}`}>{c}</button>
-                ))}
+                {filteredColonies.length > 0 ? (
+                  filteredColonies.map(c => (
+                    <button key={c} type="button" onClick={() => toggleColony(c)} className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase transition-all ${coveredCols.includes(c) ? 'bg-blue-600 text-white' : 'bg-slate-800 text-slate-500 hover:text-slate-400'}`}>{c}</button>
+                  ))
+                ) : (
+                  <p className="text-[9px] text-slate-600 font-bold uppercase p-2 w-full text-center">NO SE ENCONTRARON COLONIAS</p>
+                )}
               </div>
             </div>
 
@@ -294,12 +311,48 @@ const OperativeDetails: React.FC<OperativeDetailsProps> = ({
               <div className="space-y-4 pt-4 border-t border-slate-800">
                 <label className="block">
                   <span className="text-[10px] font-black text-slate-500 ml-1">RESULTADO FINAL</span>
-                  <select className="mt-1 w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-white outline-none" value={result} onChange={e => setResult(e.target.value as ResultType)}>
+                  <select className="mt-1 w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-white outline-none" value={result} onChange={e => { setResult(e.target.value as ResultType); setSelectedIncident(""); }}>
                     <option value="DISUACION">DISUACION (SIN NOVEDAD)</option>
                     <option value="DETENIDOS AL JUEZ CIVICO">DETENIDOS AL JUEZ CIVICO</option>
                     <option value="PUESTA A LA FISCALIA">PUESTA A LA FISCALIA</option>
                   </select>
                 </label>
+
+                {result !== 'DISUACION' && (
+                  <div className="space-y-4 animate-in slide-in-from-top-2">
+                    <InputCounter label="CANTIDAD DE DETENIDOS" value={detaineesCount} onChange={setDetaineesCount} />
+                    
+                    <label className="block">
+                      <span className="text-[10px] font-black text-slate-500 ml-1 uppercase">
+                        {result === 'PUESTA A LA FISCALIA' ? 'DELITO' : 'FALTA ADMINISTRATIVA'}
+                      </span>
+                      <select 
+                        className="mt-1 w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-white outline-none" 
+                        value={selectedIncident} 
+                        onChange={e => setSelectedIncident(e.target.value)}
+                      >
+                        <option value="">SELECCIONE UNA OPCIÓN...</option>
+                        {(result === 'PUESTA A LA FISCALIA' ? crimesCatalog : faultsCatalog).map(item => (
+                          <option key={item} value={item}>{item}</option>
+                        ))}
+                        <option value="OTRO">OTRO (ESPECIFICAR)</option>
+                      </select>
+                    </label>
+
+                    {selectedIncident === 'OTRO' && (
+                      <label className="block animate-in zoom-in-95">
+                        <span className="text-[10px] font-black text-slate-500 ml-1 uppercase">ESPECIFIQUE</span>
+                        <input 
+                          type="text" 
+                          className="mt-1 w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-white outline-none focus:ring-1 focus:ring-blue-500" 
+                          value={otherIncident} 
+                          onChange={e => setOtherIncident(removeAccents(e.target.value))} 
+                          placeholder="DESCRIBA EL MOTIVO..."
+                        />
+                      </label>
+                    )}
+                  </div>
+                )}
               </div>
             )}
           </div>

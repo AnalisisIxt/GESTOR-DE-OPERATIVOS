@@ -102,8 +102,15 @@ const Admin: React.FC<AdminProps> = ({
   const saveUserEdit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingUser) return;
+    
+    if (!editingUser.fullName || !editingUser.username) {
+      alert("EL NOMBRE Y USUARIO SON OBLIGATORIOS.");
+      return;
+    }
+
     setUsers(prev => prev.map(u => u.id === editingUser.id ? editingUser : u));
     setEditingUser(null);
+    alert("USUARIO ACTUALIZADO CORRECTAMENTE.");
   };
 
   const deleteUser = (id: string) => { if (confirm('¿ELIMINAR ESTE USUARIO?')) setUsers(prev => prev.filter(u => u.id !== id)); };

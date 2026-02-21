@@ -140,9 +140,11 @@ const App: React.FC = () => {
   };
 
   const handleSetUsers = async (updater: (prev: User[]) => User[]) => {
-    const updatedUsers = updater(users);
-    setUsers(updatedUsers);
-    await api.saveUsers(updatedUsers);
+    setUsers(prev => {
+      const updated = updater(prev);
+      api.saveUsers(updated);
+      return updated;
+    });
   };
 
   const handleSetCatalog = async (key: string, data: string[], setter: (v: string[]) => void) => {
