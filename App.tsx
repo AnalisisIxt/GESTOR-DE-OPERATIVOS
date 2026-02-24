@@ -1,6 +1,7 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { HashRouter as Router, Routes, Route, Link, useLocation, Navigate } from 'react-router-dom';
+import { io, Socket } from 'socket.io-client';
 import { 
   Home as HomeIcon, 
   ClipboardList, 
@@ -50,6 +51,44 @@ const App: React.FC = () => {
   
   const [isSyncing, setIsSyncing] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isConnected, setIsConnected] = useState(false);
+  const socketRef = useRef<Socket | null>(null);
+
+  // Real-time sync setup
+  useEffect(() => {
+    const socket = io();
+    socketRef.current = socket;
+
+    socket.on('connect', () => {
+      setIsConnected(true);
+      console.log('Real-time sync connected');
+    });
+
+    socket.on('disconnect', () => {
+      setIsConnected(false);
+      console.log('Real-time sync disconnected');
+    });
+
+    socket.on('operative:created', (newOp: Operative) => {
+      setOperatives(prev => {
+        // Idempotency check
+        if (prev.some(op => op.id === newOp.id)) return prev;
+        return [newOp, ...prev];
+      });
+    });
+
+    socket.on('operative:updated', ({ id, updates }: { id: string, updates: Partial<Operative> }) => {
+      setOperatives(prev => prev.map(op => op.id === id ? { ...op, ...updates } : op));
+    });
+
+    socket.on('operative:deleted', (id: string) => {
+      setOperatives(prev => prev.filter(op => op.id !== id));
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, []);
 
   // Carga inicial
   useEffect(() => {
@@ -178,6 +217,19 @@ const App: React.FC = () => {
             
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-950 rounded-full border border-slate-800">
+                {isConnected ? (
+                  <>
+                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+                    <span className="text-[8px] font-black text-emerald-500 uppercase tracking-tighter">EN LÍNEA</span>
+                  </>
+                ) : (
+                  <>
+                    <div className="w-1.5 h-1.5 rounded-full bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.5)] animate-pulse" />
+                    <span className="text-[8px] font-black text-red-500 uppercase tracking-tighter">DESCONECTADO</span>
+                  </>
+                )}
+              </div>
+              <div className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-950 rounded-full border border-slate-800">
                 {isSyncing ? (
                   <>
                     <RefreshCw className="w-3 h-3 text-blue-500 animate-spin" />
@@ -185,7 +237,7 @@ const App: React.FC = () => {
                   </>
                 ) : (
                   <>
-                    <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)]" />
+                    <CloudCheck className="w-3 h-3 text-emerald-500" />
                     <span className="text-[8px] font-black text-emerald-500 uppercase tracking-tighter">GUARDADO</span>
                   </>
                 )}
