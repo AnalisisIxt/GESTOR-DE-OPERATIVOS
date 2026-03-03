@@ -1,5 +1,5 @@
 
-import { CatalogEntry, Rank } from './types';
+import { CatalogEntry, Rank, User } from './types';
 
 export const OPERATIVE_TYPES = [
   "OPERATIVO DISUASION Y PREVENCION CON POLICIA MONTADA",
@@ -268,4 +268,130 @@ export const COLONIA_CATALOG: CatalogEntry[] = [
   { region: "REGION 7", quadrant: "76", colony: "LA LOBERA O SAN ISIDRO" },
   { region: "REGION 7", quadrant: "76", colony: "LLANO GRANDE" },
   { region: "REGION 7", quadrant: "77", colony: "RIO FRIO" }
+];
+
+export const INITIAL_USERS: User[] = [
+  {
+    "id": "1",
+    "fullName": "ADMINISTRADOR PRINCIPAL",
+    "username": "admin",
+    "password": "adm123",
+    "role": "ADMIN",
+    "isAgrupamiento": true
+  },
+  {
+    "id": "2",
+    "fullName": "Juan Manuel Torres Muñoz",
+    "username": "jmtorres",
+    "password": "123",
+    "role": "ADMIN",
+    "isAgrupamiento": true,
+    "phoneNumber": "5537842455",
+    "payrollNumber": "7614"
+  },
+  {
+    "id": "u1",
+    "fullName": "Juan Antonio Soberanes Garrido",
+    "username": "alpha",
+    "password": "123",
+    "role": "DIRECTOR",
+    "isAgrupamiento": true
+  },
+  {
+    "id": "u2",
+    "fullName": "Diana Vianey Carreon Yañez",
+    "username": "isis",
+    "password": "123",
+    "role": "DIRECTOR",
+    "isAgrupamiento": true
+  },
+  {
+    "id": "u3",
+    "fullName": "Victor Manuel Carmona Flores",
+    "username": "delta",
+    "password": "123",
+    "role": "DIRECTOR",
+    "isAgrupamiento": true
+  },
+  {
+    "id": "u4",
+    "fullName": "Alvaro O´ Brian Valadez Blanca",
+    "username": "poseidon",
+    "password": "123",
+    "role": "REGIONAL",
+    "assignedRegion": "REGION 3",
+    "isAgrupamiento": false
+  },
+  {
+    "id": "u5",
+    "fullName": "Jose Martin Campos Poxtan",
+    "username": "aguila",
+    "password": "123",
+    "role": "REGIONAL",
+    "assignedRegion": "REGION 5",
+    "isAgrupamiento": false
+  },
+  {
+    "id": "u6",
+    "fullName": "Juan Carlos Miranda Rodriguez",
+    "username": "efesto",
+    "password": "123",
+    "role": "REGIONAL",
+    "assignedRegion": "REGION 1",
+    "isAgrupamiento": false
+  },
+  {
+    "id": "u7",
+    "fullName": "Cristopher Fabian Olvera Vargas",
+    "username": "hermes",
+    "password": "123",
+    "role": "REGIONAL",
+    "assignedRegion": "REGION 2",
+    "isAgrupamiento": false
+  },
+  {
+    "id": "u8",
+    "fullName": "Jorge Hernandez Gallardo",
+    "username": "libra",
+    "password": "123",
+    "role": "REGIONAL",
+    "assignedRegion": "REGION 4",
+    "isAgrupamiento": false
+  },
+  {
+    "id": "u9",
+    "fullName": "Luis Martin Alegre Luna",
+    "username": "lince",
+    "password": "123",
+    "role": "REGIONAL",
+    "assignedRegion": "REGION 6",
+    "isAgrupamiento": false
+  },
+  {
+    "id": "u10",
+    "fullName": "Sergio Arias Coli",
+    "username": "cratos",
+    "password": "123",
+    "role": "REGIONAL",
+    "assignedRegion": "REGION 7",
+    "isAgrupamiento": false
+  },
+  {
+    "id": "u11",
+    "fullName": "Geovanny Garcia Lopez",
+    "username": "anubis",
+    "password": "123",
+    "role": "JEFE_AGRUPAMIENTO",
+    "assignedRegion": "GOE",
+    "isAgrupamiento": true
+  },
+  {
+    "id": "u12",
+    "fullName": "Emmanuel Vergara Guzman",
+    "username": "condor",
+    "password": "123",
+    "role": "JEFE_AGRUPAMIENTO",
+    "assignedRegion": "PROXIMIDAD",
+    "isAgrupamiento": true
+  }
 ];

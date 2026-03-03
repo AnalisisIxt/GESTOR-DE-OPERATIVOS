@@ -33,7 +33,8 @@ import {
   INITIAL_CRIMES,
   INITIAL_FAULTS,
   RANKS as DEFAULT_RANKS,
-  INITIAL_MEETING_TOPICS
+  INITIAL_MEETING_TOPICS,
+  INITIAL_USERS
 } from './constants';
 import { api } from './lib/api';
 
@@ -116,15 +117,12 @@ const App: React.FC = () => {
         setRanksCatalog(ranks);
         setMeetingTopicsCatalog(topics);
 
-        if (u.length === 0) {
-          const initialUsers: User[] = [
-            { id: '1', fullName: 'ADMINISTRADOR PRINCIPAL', username: 'admin', password: 'adm123', role: 'ADMIN' },
-            { id: 'u1', fullName: 'DIRECTOR ALPHA', username: 'alpha', password: '123', role: 'DIRECTOR' }
-          ];
-          setUsers(initialUsers);
-          await api.saveUsers(initialUsers);
-        } else {
+        if (u && u.length > 0) {
           setUsers(u);
+        } else {
+          setUsers(INITIAL_USERS);
+          // Try to save them if we are on a platform that supports it
+          try { await api.saveUsers(INITIAL_USERS); } catch(e) {}
         }
 
         const savedUser = localStorage.getItem('ixta_user');
