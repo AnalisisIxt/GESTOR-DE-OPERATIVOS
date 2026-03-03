@@ -228,7 +228,7 @@ const NewOperative: React.FC<NewOperativeProps> = ({
                   <span className="text-[10px] font-black text-slate-500 uppercase">TEMÁTICA DE LA REUNIÓN</span>
                 </div>
                 <select 
-                  value={meetingTopic} 
+                  value={meetingTopic || ""} 
                   onChange={(e) => setMeetingTopic(e.target.value)} 
                   required
                   className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-white uppercase outline-none focus:ring-2 focus:ring-blue-600"
@@ -280,29 +280,29 @@ const NewOperative: React.FC<NewOperativeProps> = ({
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <span className="text-[8px] font-black text-slate-600 ml-1">NO. UNIDAD</span>
-                  <input type="text" placeholder="EJ. 123" className="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-xs text-white uppercase outline-none focus:ring-1 focus:ring-blue-600" value={u.unitNumber} onChange={e => updateUnit(u.id, 'unitNumber', e.target.value)} />
+                  <input type="text" placeholder="EJ. 123" className="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-xs text-white uppercase outline-none focus:ring-1 focus:ring-blue-600" value={u.unitNumber || ""} onChange={e => updateUnit(u.id, 'unitNumber', e.target.value)} />
                 </div>
                 <div className="space-y-1">
                   <span className="text-[8px] font-black text-slate-600 ml-1">OFICIAL AL MANDO</span>
-                  <input type="text" placeholder="NOMBRE COMPLETO" className="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-xs text-white uppercase outline-none focus:ring-1 focus:ring-blue-600" value={u.inCharge} onChange={e => updateUnit(u.id, 'inCharge', e.target.value)} />
+                  <input type="text" placeholder="NOMBRE COMPLETO" className="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-xs text-white uppercase outline-none focus:ring-1 focus:ring-blue-600" value={u.inCharge || ""} onChange={e => updateUnit(u.id, 'inCharge', e.target.value)} />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <span className="text-[8px] font-black text-slate-600 ml-1">CARGO / RANGO</span>
-                  <select value={u.rank} onChange={e => updateUnit(u.id, 'rank', e.target.value)} className="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-xs text-white uppercase outline-none">
+                  <select value={u.rank || ""} onChange={e => updateUnit(u.id, 'rank', e.target.value)} className="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-xs text-white uppercase outline-none">
                     {ranksCatalog.map(r => <option key={r} value={r}>{r}</option>)}
                   </select>
                 </div>
                 <div className="space-y-1">
                   <span className="text-[8px] font-black text-slate-600 ml-1">TELEFONO DE CONTACTO</span>
-                  <input type="tel" maxLength={10} placeholder="10 DÍGITOS" className="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-xs text-white outline-none focus:ring-1 focus:ring-blue-600" value={u.phoneNumber} onChange={e => handleUnitPhoneChange(u.id, e.target.value)} />
+                  <input type="tel" maxLength={10} placeholder="10 DÍGITOS" className="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-xs text-white outline-none focus:ring-1 focus:ring-blue-600" value={u.phoneNumber || ""} onChange={e => handleUnitPhoneChange(u.id, e.target.value)} />
                 </div>
               </div>
               <div className="grid grid-cols-1 gap-4">
                 <div className="space-y-1">
                   <span className="text-[8px] font-black text-slate-600 ml-1">CANT. ELEMENTOS</span>
-                  <input type="number" placeholder="0" className="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-xs text-white outline-none focus:ring-1 focus:ring-blue-600" value={u.personnelCount} onChange={e => updateUnit(u.id, 'personnelCount', parseInt(e.target.value) || 0)} />
+                  <input type="number" placeholder="0" className="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-xs text-white outline-none focus:ring-1 focus:ring-blue-600" value={u.personnelCount || 0} onChange={e => updateUnit(u.id, 'personnelCount', parseInt(e.target.value) || 0)} />
                 </div>
               </div>
             </div>
@@ -321,28 +321,28 @@ const NewOperative: React.FC<NewOperativeProps> = ({
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1">
                     <span className="text-[8px] font-black text-slate-600 ml-1">CORPORACIÓN</span>
-                    <select value={c.name} onChange={e => updateCorp(c.id, 'name', e.target.value)} className="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-xs text-white uppercase outline-none">
+                    <select value={c.name || ""} onChange={e => updateCorp(c.id, 'name', e.target.value)} className="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-xs text-white uppercase outline-none">
                       {corporationsCatalog.map(name => <option key={name} value={name}>{name}</option>)}
                     </select>
                   </div>
                   <div className="space-y-1">
                     <span className="text-[8px] font-black text-slate-600 ml-1">NO. UNIDAD (ECONÓMICO)</span>
-                    <input type="text" placeholder="NO. UNIDAD" className="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-xs text-white uppercase outline-none focus:ring-1 focus:ring-blue-600" value={c.unitNumber} onChange={e => updateCorp(c.id, 'unitNumber', e.target.value)} />
+                    <input type="text" placeholder="NO. UNIDAD" className="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-xs text-white uppercase outline-none focus:ring-1 focus:ring-blue-600" value={c.unitNumber || ""} onChange={e => updateCorp(c.id, 'unitNumber', e.target.value)} />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1">
                     <span className="text-[8px] font-black text-slate-600 ml-1">MANDO A CARGO</span>
-                    <input type="text" placeholder="NOMBRE RESPONSABLE" className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-white uppercase outline-none focus:ring-1 focus:ring-blue-600" value={c.inCharge} onChange={e => updateCorp(c.id, 'inCharge', e.target.value)} />
+                    <input type="text" placeholder="NOMBRE RESPONSABLE" className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-white uppercase outline-none focus:ring-1 focus:ring-blue-600" value={c.inCharge || ""} onChange={e => updateCorp(c.id, 'inCharge', e.target.value)} />
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     <div className="space-y-1">
                       <span className="text-[8px] font-black text-slate-600 ml-1">UNIDADES</span>
-                      <input type="number" placeholder="0" className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-white outline-none focus:ring-1 focus:ring-blue-600" value={c.unitCount} onChange={e => updateCorp(c.id, 'unitCount', parseInt(e.target.value) || 0)} />
+                      <input type="number" placeholder="0" className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-white outline-none focus:ring-1 focus:ring-blue-600" value={c.unitCount || 0} onChange={e => updateCorp(c.id, 'unitCount', parseInt(e.target.value) || 0)} />
                     </div>
                     <div className="space-y-1">
                       <span className="text-[8px] font-black text-slate-600 ml-1">ELEMENTOS</span>
-                      <input type="number" placeholder="0" className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-white outline-none focus:ring-1 focus:ring-blue-600" value={c.personnelCount} onChange={e => updateCorp(c.id, 'personnelCount', parseInt(e.target.value) || 0)} />
+                      <input type="number" placeholder="0" className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-white outline-none focus:ring-1 focus:ring-blue-600" value={c.personnelCount || 0} onChange={e => updateCorp(c.id, 'personnelCount', parseInt(e.target.value) || 0)} />
                     </div>
                   </div>
                 </div>

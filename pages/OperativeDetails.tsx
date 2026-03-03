@@ -247,7 +247,7 @@ const OperativeDetails: React.FC<OperativeDetailsProps> = ({
           <div className="space-y-4">
             <label className="block">
               <span className="text-[10px] font-black text-slate-500 ml-1">LUGAR DE TÉRMINO</span>
-              <input type="text" className="mt-1 w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-white focus:ring-1 focus:ring-emerald-500 outline-none" value={concLocation} onChange={e => setConcLocation(removeAccents(e.target.value))} />
+              <input type="text" className="mt-1 w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-white focus:ring-1 focus:ring-emerald-500 outline-none" value={concLocation || ""} onChange={e => setConcLocation(removeAccents(e.target.value))} />
             </label>
             
             <div className="space-y-2">
@@ -282,11 +282,11 @@ const OperativeDetails: React.FC<OperativeDetailsProps> = ({
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <label className="block">
                     <span className="text-[10px] font-black text-slate-500 ml-1">NOMBRE DEL REPRESENTANTE</span>
-                    <input type="text" className="mt-1 w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-white focus:ring-1 focus:ring-blue-500 outline-none" value={repName} onChange={e => setRepName(removeAccents(e.target.value))} />
+                    <input type="text" className="mt-1 w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-white focus:ring-1 focus:ring-blue-500 outline-none" value={repName || ""} onChange={e => setRepName(removeAccents(e.target.value))} />
                   </label>
                   <label className="block">
                     <span className="text-[10px] font-black text-slate-500 ml-1">TELÉFONO</span>
-                    <input type="tel" maxLength={10} className="mt-1 w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-white focus:ring-1 focus:ring-blue-500 outline-none" value={repPhone} onChange={handlePhoneChange} />
+                    <input type="tel" maxLength={10} className="mt-1 w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-white focus:ring-1 focus:ring-blue-500 outline-none" value={repPhone || ""} onChange={handlePhoneChange} />
                   </label>
                 </div>
                 <InputCounter label="NUMERO DE ASISTENTES" value={partCount} onChange={setPartCount} />
@@ -295,7 +295,7 @@ const OperativeDetails: React.FC<OperativeDetailsProps> = ({
                     <FileText className="w-3.5 h-3.5 text-slate-500" />
                     <span className="text-[10px] font-black text-slate-500 uppercase">PETICIONES O ACUERDOS</span>
                   </div>
-                  <textarea className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-white focus:ring-1 focus:ring-blue-500 outline-none min-h-[100px]" value={petitions} onChange={e => setPetitions(removeAccents(e.target.value))} placeholder="ESCRIBA LAS SOLICITUDES DE LOS VECINOS..." />
+                  <textarea className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-white focus:ring-1 focus:ring-blue-500 outline-none min-h-[100px]" value={petitions || ""} onChange={e => setPetitions(removeAccents(e.target.value))} placeholder="ESCRIBA LAS SOLICITUDES DE LOS VECINOS..." />
                 </label>
               </div>
             ) : (
@@ -311,7 +311,7 @@ const OperativeDetails: React.FC<OperativeDetailsProps> = ({
               <div className="space-y-4 pt-4 border-t border-slate-800">
                 <label className="block">
                   <span className="text-[10px] font-black text-slate-500 ml-1">RESULTADO FINAL</span>
-                  <select className="mt-1 w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-white outline-none" value={result} onChange={e => { setResult(e.target.value as ResultType); setSelectedIncident(""); }}>
+                  <select className="mt-1 w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-white outline-none" value={result || "DISUACION"} onChange={e => { setResult(e.target.value as ResultType); setSelectedIncident(""); }}>
                     <option value="DISUACION">DISUACION (SIN NOVEDAD)</option>
                     <option value="DETENIDOS AL JUEZ CIVICO">DETENIDOS AL JUEZ CIVICO</option>
                     <option value="PUESTA A LA FISCALIA">PUESTA A LA FISCALIA</option>
@@ -328,7 +328,7 @@ const OperativeDetails: React.FC<OperativeDetailsProps> = ({
                       </span>
                       <select 
                         className="mt-1 w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-white outline-none" 
-                        value={selectedIncident} 
+                        value={selectedIncident || ""} 
                         onChange={e => setSelectedIncident(e.target.value)}
                       >
                         <option value="">SELECCIONE UNA OPCIÓN...</option>
@@ -345,7 +345,7 @@ const OperativeDetails: React.FC<OperativeDetailsProps> = ({
                         <input 
                           type="text" 
                           className="mt-1 w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-white outline-none focus:ring-1 focus:ring-blue-500" 
-                          value={otherIncident} 
+                          value={otherIncident || ""} 
                           onChange={e => setOtherIncident(removeAccents(e.target.value))} 
                           placeholder="DESCRIBA EL MOTIVO..."
                         />

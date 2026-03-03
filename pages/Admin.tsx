@@ -348,22 +348,22 @@ const Admin: React.FC<AdminProps> = ({
               {editingUser ? 'EDITAR USUARIO' : 'REGISTRO DE USUARIOS'}
             </h3>
             <form onSubmit={editingUser ? saveUserEdit : addUser} className="grid grid-cols-2 gap-4">
-              <input type="text" placeholder="NOMBRE COMPLETO" className="bg-slate-950 border border-slate-800 p-3 rounded-xl text-xs" value={editingUser ? editingUser.fullName : newUser.fullName} onChange={e => editingUser ? setEditingUser({...editingUser, fullName: e.target.value}) : setNewUser({...newUser, fullName: e.target.value})} />
-              <input type="text" placeholder="USUARIO" className="bg-slate-950 border border-slate-800 p-3 rounded-xl text-xs" value={editingUser ? editingUser.username : newUser.username} onChange={e => editingUser ? setEditingUser({...editingUser, username: e.target.value}) : setNewUser({...newUser, username: e.target.value})} />
-              <input type="text" placeholder="CONTRASEÑA" className="bg-slate-950 border border-slate-800 p-3 rounded-xl text-xs" value={editingUser ? editingUser.password : newUser.password} onChange={e => editingUser ? setEditingUser({...editingUser, password: e.target.value}) : setNewUser({...newUser, password: e.target.value})} />
-              <select className="bg-slate-950 border border-slate-800 p-3 rounded-xl text-xs" value={editingUser ? editingUser.role : newUser.role} onChange={e => editingUser ? setEditingUser({...editingUser, role: e.target.value as Role}) : setNewUser({...newUser, role: e.target.value as Role})}>
+              <input type="text" placeholder="NOMBRE COMPLETO" className="bg-slate-950 border border-slate-800 p-3 rounded-xl text-xs" value={editingUser ? (editingUser.fullName || '') : (newUser.fullName || '')} onChange={e => editingUser ? setEditingUser({...editingUser, fullName: e.target.value}) : setNewUser({...newUser, fullName: e.target.value})} />
+              <input type="text" placeholder="USUARIO" className="bg-slate-950 border border-slate-800 p-3 rounded-xl text-xs" value={editingUser ? (editingUser.username || '') : (newUser.username || '')} onChange={e => editingUser ? setEditingUser({...editingUser, username: e.target.value}) : setNewUser({...newUser, username: e.target.value})} />
+              <input type="text" placeholder="CONTRASEÑA" className="bg-slate-950 border border-slate-800 p-3 rounded-xl text-xs" value={editingUser ? (editingUser.password || '') : (newUser.password || '')} onChange={e => editingUser ? setEditingUser({...editingUser, password: e.target.value}) : setNewUser({...newUser, password: e.target.value})} />
+              <select className="bg-slate-950 border border-slate-800 p-3 rounded-xl text-xs" value={editingUser ? (editingUser.role || 'PATRULLERO') : (newUser.role || 'PATRULLERO')} onChange={e => editingUser ? setEditingUser({...editingUser, role: e.target.value as Role}) : setNewUser({...newUser, role: e.target.value as Role})}>
                 {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
               </select>
-              <input type="tel" maxLength={10} placeholder="TELEFONO" className="bg-slate-950 border border-slate-800 p-3 rounded-xl text-xs" value={editingUser ? editingUser.phoneNumber : newUser.phoneNumber} onChange={handlePhoneChange} />
-              <input type="text" placeholder="NO. NOMINA" className="bg-slate-950 border border-slate-800 p-3 rounded-xl text-xs" value={editingUser ? editingUser.payrollNumber : newUser.payrollNumber} onChange={e => editingUser ? setEditingUser({...editingUser, payrollNumber: e.target.value}) : setNewUser({...newUser, payrollNumber: e.target.value})} />
+              <input type="tel" maxLength={10} placeholder="TELEFONO" className="bg-slate-950 border border-slate-800 p-3 rounded-xl text-xs" value={editingUser ? (editingUser.phoneNumber || '') : (newUser.phoneNumber || '')} onChange={handlePhoneChange} />
+              <input type="text" placeholder="NO. NOMINA" className="bg-slate-950 border border-slate-800 p-3 rounded-xl text-xs" value={editingUser ? (editingUser.payrollNumber || '') : (newUser.payrollNumber || '')} onChange={e => editingUser ? setEditingUser({...editingUser, payrollNumber: e.target.value}) : setNewUser({...newUser, payrollNumber: e.target.value})} />
               
               <div className="col-span-2 flex items-center gap-4 bg-slate-950 p-3 rounded-xl border border-slate-800">
                 <label className="flex items-center gap-2 cursor-pointer">
-                  <input type="checkbox" checked={editingUser ? editingUser.isAgrupamiento : newUser.isAgrupamiento} onChange={e => editingUser ? setEditingUser({...editingUser, isAgrupamiento: e.target.checked}) : setNewUser({...newUser, isAgrupamiento: e.target.checked})} />
+                  <input type="checkbox" checked={editingUser ? !!editingUser.isAgrupamiento : !!newUser.isAgrupamiento} onChange={e => editingUser ? setEditingUser({...editingUser, isAgrupamiento: e.target.checked}) : setNewUser({...newUser, isAgrupamiento: e.target.checked})} />
                   <span className="text-[10px] font-black">ADSCURITO A AGRUPAMIENTO</span>
                 </label>
                 {!(editingUser ? editingUser.isAgrupamiento : newUser.isAgrupamiento) && (
-                   <select className="flex-1 bg-slate-900 border border-slate-700 p-1.5 rounded text-[10px]" value={editingUser ? editingUser.assignedRegion : newUser.assignedRegion} onChange={e => editingUser ? setEditingUser({...editingUser, assignedRegion: e.target.value}) : setNewUser({...newUser, assignedRegion: e.target.value})}>
+                   <select className="flex-1 bg-slate-900 border border-slate-700 p-1.5 rounded text-[10px]" value={editingUser ? (editingUser.assignedRegion || REGIONS[0]) : (newUser.assignedRegion || REGIONS[0])} onChange={e => editingUser ? setEditingUser({...editingUser, assignedRegion: e.target.value}) : setNewUser({...newUser, assignedRegion: e.target.value})}>
                      {REGIONS.map(r => <option key={r} value={r}>{r}</option>)}
                    </select>
                 )}
