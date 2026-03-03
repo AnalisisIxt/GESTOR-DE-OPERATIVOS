@@ -124,8 +124,13 @@ async function startServer() {
 
   const PORT = 3000;
   httpServer.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server running on http://localhost:${PORT}`);
+    console.log(`[SERVER] Running on http://0.0.0.0:${PORT}`);
+    console.log(`[SERVER] Environment: ${process.env.NODE_ENV || 'development'}`);
+  }).on('error', (err) => {
+    console.error('[SERVER] Failed to start:', err);
   });
 }
 
-startServer();
+startServer().catch(err => {
+  console.error('[SERVER] Fatal error during startup:', err);
+});
