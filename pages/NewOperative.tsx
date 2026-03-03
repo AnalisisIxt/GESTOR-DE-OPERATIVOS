@@ -53,8 +53,19 @@ const NewOperative: React.FC<NewOperativeProps> = ({
 
   const [isSaving, setIsSaving] = useState(false);
   const [loadingLocation, setLoadingLocation] = useState(false);
+  const [unitHistory, setUnitHistory] = useState<string[]>([]);
   
-  // Form State
+  // Load unit history on mount
+  useEffect(() => {
+    const savedHistory = localStorage.getItem(`ixta_unit_history_${user.id}`);
+    if (savedHistory) {
+      try {
+        setUnitHistory(JSON.parse(savedHistory));
+      } catch (e) {
+        setUnitHistory([]);
+      }
+    }
+  }, [user.id]);
   const [type, setType] = useState(opTypes[0] || "");
   const [meetingTopic, setMeetingTopic] = useState("");
   const [region, setRegion] = useState(user.assignedRegion || REGIONS[0]);
@@ -187,6 +198,11 @@ const NewOperative: React.FC<NewOperativeProps> = ({
     const fixedLat = parseFloat(latitude.toFixed(6));
     const fixedLng = parseFloat(longitude.toFixed(6));
 
+    // Update unit history
+    const newUnitNumbers = units.map(u => u.unitNumber).filter(n => n.trim() !== "");
+    const updatedHistory = Array.from(new Set([...newUnitNumbers, ...unitHistory])).slice(0, 20);
+    localStorage.setItem(`ixta_unit_history_${user.id}`, JSON.stringify(updatedHistory));
+
     const newOp: Operative = {
       id: generateOperativeId(today, todayOpsCount + 1),
       type, 
@@ -280,7 +296,19 @@ const NewOperative: React.FC<NewOperativeProps> = ({
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <span className="text-[8px] font-black text-slate-600 ml-1">NO. UNIDAD</span>
-                  <input type="text" placeholder="EJ. 123" className="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-xs text-white uppercase outline-none focus:ring-1 focus:ring-blue-600" value={u.unitNumber || ""} onChange={e => updateUnit(u.id, 'unitNumber', e.target.value)} />
+                  <input 
+                    type="text" 
+                    list={`unit-suggestions-${idx}`}
+                    placeholder="EJ. 123" 
+                    className="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-xs text-white uppercase outline-none focus:ring-1 focus:ring-blue-600" 
+                    value={u.unitNumber || ""} 
+                    onChange={e => updateUnit(u.id, 'unitNumber', e.target.value)} 
+                  />
+                  <datalist id={`unit-suggestions-${idx}`}>
+                    {unitHistory.map(num => (
+                      <option key={num} value={num} />
+                    ))}
+                  </datalist>
                 </div>
                 <div className="space-y-1">
                   <span className="text-[8px] font-black text-slate-600 ml-1">OFICIAL AL MANDO</span>
@@ -327,7 +355,19 @@ const NewOperative: React.FC<NewOperativeProps> = ({
                   </div>
                   <div className="space-y-1">
                     <span className="text-[8px] font-black text-slate-600 ml-1">NO. UNIDAD (ECONÓMICO)</span>
-                    <input type="text" placeholder="NO. UNIDAD" className="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-xs text-white uppercase outline-none focus:ring-1 focus:ring-blue-600" value={c.unitNumber || ""} onChange={e => updateCorp(c.id, 'unitNumber', e.target.value)} />
+                    <input 
+                      type="text" 
+                      list={`corp-unit-suggestions-${c.id}`}
+                      placeholder="NO. UNIDAD" 
+                      className="w-full bg-slate-900 border border-slate-800 rounded-xl p-3 text-xs text-white uppercase outline-none focus:ring-1 focus:ring-blue-600" 
+                      value={c.unitNumber || ""} 
+                      onChange={e => updateCorp(c.id, 'unitNumber', e.target.value)} 
+                    />
+                    <datalist id={`corp-unit-suggestions-${c.id}`}>
+                      {unitHistory.map(num => (
+                        <option key={num} value={num} />
+                      ))}
+                    </datalist>
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
